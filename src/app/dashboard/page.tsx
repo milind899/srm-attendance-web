@@ -650,7 +650,7 @@ function SubjectCard({ record }: { record: AttendanceRecord; department: string 
         <div className="group relative p-4 bg-[#09090b] border border-white/5 rounded-xl hover:border-white/10 transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,0,0,0.4)] overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
 
-            <div className="relative flex justify-between items-start mb-5">
+            <div className="relative flex justify-between items-start mb-3">
                 <div className="flex-1 min-w-0 mr-4">
                     <h3 className="font-medium text-white text-base truncate leading-snug tracking-wide">{record.subjectName}</h3>
                     <div className="flex items-center gap-2 mt-1">
@@ -731,7 +731,7 @@ function MarksCard({ subject }: { subject: SubjectMarks }) {
                 </div>
             </div>
 
-            <div className="relative w-full h-2 bg-white/5 rounded-full overflow-hidden mb-5">
+            <div className="relative w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
                 <div
                     className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${getGlowColor(percentage)}`}
                     style={{ width: `${Math.min(100, percentage)}%` }}
