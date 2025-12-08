@@ -80,7 +80,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({ data, overallPercentage })
                 <div className="space-y-2">
                     {topSubjects.map((s, i) => (
                         <div key={i} className="flex items-center justify-between text-sm">
-                            <span className="text-textMuted truncate max-w-[180px]">{s.subject}</span>
+                            <span className="text-textMuted truncate max-w-[180px]">{s.subjectName}</span>
                             <span className={`font-medium ${s.percentage >= 75 ? 'text-green-400' : 'text-red-400'}`}>
                                 {s.percentage}%
                             </span>
