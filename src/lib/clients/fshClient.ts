@@ -244,4 +244,71 @@ export class FshClient {
             }
         };
     }
+
+    public async fetchProfile(cookieStr: string, username: string): Promise<any> {
+        console.error('[FshClient] fetchProfile called');
+
+        try {
+            await this.restoreCookies(cookieStr);
+
+            // Fetch the dashboard/personal details page
+            const profileUrl = '/students/index.jsp';
+            console.error('[FshClient] Fetching profile page...');
+            const resp = await this.client.get(profileUrl);
+            const $ = cheerio.load(resp.data);
+
+            // Look for Student Profile table
+            const profile: any = {
+                studentName: '',
+                studentId: '',
+                registrationNumber: username,
+                email: '',
+                institution: '',
+                program: '',
+            };
+
+            // Parse table rows looking for profile data
+            $('table tr').each((_, row) => {
+                const cells = $(row).find('td');
+                if (cells.length >= 2) {
+                    const label = $(cells[0]).text().trim().toLowerCase();
+                    const value = $(cells[1]).text().trim();
+
+                    if (label.includes('student name') || label.includes('name')) {
+                        profile.studentName = value;
+                    } else if (label.includes('student id')) {
+                        profile.studentId = value;
+                    } else if (label.includes('register') || label.includes('reg')) {
+                        profile.registrationNumber = value;
+                    } else if (label.includes('email')) {
+                        profile.email = value;
+                    } else if (label.includes('institution') || label.includes('faculty')) {
+                        profile.institution = value;
+                    } else if (label.includes('program') || label.includes('course')) {
+                        profile.program = value;
+                    }
+                }
+            });
+
+            // Also check for text content directly
+            const pageText = $('body').text();
+
+            // Extract program from page if not found
+            if (!profile.program) {
+                const programMatch = pageText.match(/B\.?Tech|B\.?B\.?A|M\.?Tech|M\.?B\.?A/i);
+                if (programMatch) profile.program = programMatch[0];
+            }
+
+            console.error('[FshClient] Profile parsed:', profile);
+
+            return {
+                success: true,
+                data: profile
+            };
+
+        } catch (e: any) {
+            console.error('[FshClient] Profile error:', e.message);
+            return { success: false, error: e.message };
+        }
+    }
 }

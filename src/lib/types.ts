@@ -52,3 +52,22 @@ export interface InternalMarksResult {
     data?: InternalMarksData;
     error?: string;
 }
+
+export interface StudentProfile {
+    studentName: string;
+    studentId: string;
+    registrationNumber: string;
+    email: string;
+    institution: string;
+    program: string;
+    year?: string;
+    semester?: string;
+    section?: string;
+    batch?: string;
+}
+
+export interface ProfileResult {
+    success: boolean;
+    data?: StudentProfile;
+    error?: string;
+}

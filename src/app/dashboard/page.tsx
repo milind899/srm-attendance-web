@@ -17,6 +17,8 @@ export default function Dashboard() {
     const [activeTab, setActiveTab] = useState<Tab>('attendance');
     const [predictDays, setPredictDays] = useState(0);
     const [showProfile, setShowProfile] = useState(false);
+    const [profile, setProfile] = useState<any>(null);
+    const [profileLoading, setProfileLoading] = useState(false);
 
     useEffect(() => {
         const stored = localStorage.getItem('attendanceData');
@@ -63,6 +65,36 @@ export default function Dashboard() {
         } finally {
             setMarksLoading(false);
         }
+    };
+
+    const fetchProfile = async () => {
+        if (profile || profileLoading || department !== 'FSH') return;
+
+        setProfileLoading(true);
+        try {
+            const cookies = localStorage.getItem('fshCookies') || '';
+            const username = data?.registrationNumber || '';
+
+            const res = await fetch('/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cookies, username })
+            });
+
+            const result = await res.json();
+            if (result.success && result.data) {
+                setProfile(result.data);
+            }
+        } catch (e) {
+            console.error('Failed to fetch profile:', e);
+        } finally {
+            setProfileLoading(false);
+        }
+    };
+
+    const handleOpenProfile = () => {
+        setShowProfile(true);
+        fetchProfile();
     };
 
     if (loading || !data) {
@@ -138,7 +170,7 @@ export default function Dashboard() {
                     )}
                 </nav>
 
-                <div className={styles.userSection} onClick={() => setShowProfile(true)} style={{ cursor: 'pointer' }}>
+                <div className={styles.userSection} onClick={handleOpenProfile} style={{ cursor: 'pointer' }}>
                     <div className={styles.userAvatar}>
                         {data.studentName?.charAt(0) || 'U'}
                     </div>
@@ -155,8 +187,8 @@ export default function Dashboard() {
                     <div className={styles.profileModal} onClick={(e) => e.stopPropagation()}>
                         <button className={styles.modalClose} onClick={() => setShowProfile(false)}>✕</button>
 
-                        <h2 className={styles.profileName}>{data.studentName}</h2>
-                        <p className={styles.profileReg}>{data.registrationNumber}</p>
+                        <h2 className={styles.profileName}>{profile?.studentName || data.studentName}</h2>
+                        <p className={styles.profileReg}>{profile?.registrationNumber || data.registrationNumber}</p>
 
                         <div className={styles.profileGrid}>
                             <div className={styles.profileItem}>
