@@ -110,8 +110,8 @@ function LoginForm() {
                 <div className="relative bg-surface border border-border rounded-xl shadow-2xl overflow-hidden">
                     {/* Header */}
                     <div className="p-6 sm:p-8 pb-4 sm:pb-6 text-center">
-                        <Link href="/" className="mx-auto w-10 h-10 bg-[#1C1D21] border border-border rounded-lg flex items-center justify-center mb-4 shadow-inner">
-                            <img src="/logo.png" alt="AttendX" className="w-6 h-6" />
+                        <Link href="/" className="mx-auto w-16 h-16 bg-[#1C1D21] border border-border rounded-xl flex items-center justify-center mb-6 shadow-inner hover:scale-105 transition-transform duration-300">
+                            <img src="/logo.png" alt="AttendX" className="w-10 h-10 object-contain" />
                         </Link>
                         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-2">Welcome to AttendX</h1>
                         <p className="text-xs sm:text-sm text-textMuted">Sign in to sync your attendance records</p>

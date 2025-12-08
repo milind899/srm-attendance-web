@@ -21,7 +21,7 @@ export async function scrapeEntAttendance(username: string, password: string): P
 
             browser = await puppeteerCore.launch({
                 args: chromium.args,
-                defaultViewport: chromium.defaultViewport,
+                defaultViewport: { width: 1280, height: 900 },
                 executablePath: await chromium.executablePath(),
                 headless: chromium.headless,
             });
