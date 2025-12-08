@@ -240,7 +240,25 @@ export default function Dashboard() {
                 </div>
             </nav>
 
-            <main className="relative z-10 pt-20 pb-24">
+            {/* Mobile Tab Bar - Top Sticky */}
+            <div className="md:hidden fixed top-16 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50 px-4 py-2">
+                <div className="flex bg-surface/50 p-1 rounded-lg">
+                    {(['attendance', 'marks', 'grades'] as Tab[]).map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${activeTab === tab
+                                ? 'bg-primary/20 text-white shadow-sm'
+                                : 'text-textMuted hover:text-white'
+                                }`}
+                        >
+                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <main className="relative z-10 pt-32 md:pt-24 pb-10">
                 {/* Attendance Tab */}
                 {activeTab === 'attendance' && (
                     <div className="max-w-6xl mx-auto px-4">
@@ -277,19 +295,9 @@ export default function Dashboard() {
                         </div>
 
                         {/* Subject Cards - Horizontal Scroll on Mobile */}
+                        {/* Subject Cards - Vertical Stack on Mobile */}
                         <div className="opacity-0 animate-blur-in delay-200">
-                            {/* Mobile: Horizontal Scroll */}
-                            <div className="overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide sm:hidden">
-                                <div className="flex gap-3" style={{ width: 'max-content' }}>
-                                    {data.records.map((record, i) => (
-                                        <div key={`${record.subjectCode}-${i}`} className="w-[85vw] max-w-[300px] flex-shrink-0 snap-center">
-                                            <SubjectCard record={record} department={department} />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            {/* Desktop: Grid */}
-                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {data.records.map((record, i) => (
                                     <SubjectCard key={`${record.subjectCode}-${i}`} record={record} department={department} />
                                 ))}
@@ -359,18 +367,7 @@ export default function Dashboard() {
                                     </div>
                                 ) : subjectsWithMarks.length > 0 ? (
                                     <div className="opacity-0 animate-blur-in delay-200">
-                                        {/* Mobile: Horizontal Scroll */}
-                                        <div className="overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide sm:hidden">
-                                            <div className="flex gap-3" style={{ width: 'max-content' }}>
-                                                {subjectsWithMarks.map((subject, i) => (
-                                                    <div key={`${subject.subjectCode}-${i}`} className="w-[85vw] max-w-[300px] flex-shrink-0 snap-center">
-                                                        <MarksCard subject={subject} />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        {/* Desktop: Grid */}
-                                        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                             {subjectsWithMarks.map((subject, i) => (
                                                 <MarksCard key={`${subject.subjectCode}-${i}`} subject={subject} />
                                             ))}
@@ -629,20 +626,6 @@ export default function Dashboard() {
                 </p>
             </footer>
 
-            {/* Mobile Tab Bar */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-nav border-t border-border">
-                <div className="flex justify-around py-2">
-                    {(['attendance', 'marks', 'grades'] as Tab[]).map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-3 text-sm font-medium transition-all ${activeTab === tab ? 'text-white' : 'text-textMuted'}`}
-                        >
-                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                        </button>
-                    ))}
-                </div>
-            </div>
         </div>
     );
 }
@@ -664,7 +647,7 @@ function SubjectCard({ record }: { record: AttendanceRecord; department: string 
     };
 
     return (
-        <div className="group relative p-5 bg-[#09090b] border border-white/5 rounded-2xl hover:border-white/10 transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,0,0,0.4)] overflow-hidden">
+        <div className="group relative p-4 bg-[#09090b] border border-white/5 rounded-xl hover:border-white/10 transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,0,0,0.4)] overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
 
             <div className="relative flex justify-between items-start mb-5">
@@ -688,7 +671,7 @@ function SubjectCard({ record }: { record: AttendanceRecord; department: string 
                 </div>
             </div>
 
-            <div className="relative w-full h-2 bg-white/5 rounded-full overflow-hidden mb-4">
+            <div className="relative w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-3">
                 <div
                     className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${isSafe ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' : 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.4)]'}`}
                     style={{ width: `${Math.min(100, record.percentage)}%` }}
@@ -733,10 +716,10 @@ function MarksCard({ subject }: { subject: SubjectMarks }) {
     };
 
     return (
-        <div className="group relative p-5 bg-[#09090b] border border-white/5 rounded-2xl hover:border-white/10 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,0,0,0.4)] overflow-hidden">
+        <div className="group relative p-4 bg-[#09090b] border border-white/5 rounded-xl hover:border-white/10 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,0,0,0.4)] overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
 
-            <div className="relative flex justify-between items-start mb-5">
+            <div className="relative flex justify-between items-start mb-3">
                 <div className="flex-1 min-w-0 mr-4">
                     <h3 className="font-medium text-white text-base truncate leading-snug tracking-wide">{subject.subjectName}</h3>
                     <p className="text-[11px] text-white/40 mt-0.5 font-mono">{subject.subjectCode}</p>
