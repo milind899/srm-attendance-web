@@ -523,19 +523,19 @@ export default function Dashboard() {
                 )
                 }
 
-            </main >
+            </main>
 
             {/* Footer / Disclaimer */}
-            < footer className="py-8 text-center opacity-60 hover:opacity-100 transition-opacity mb-20 md:mb-0" >
+            <footer className="py-8 text-center opacity-60 hover:opacity-100 transition-opacity mb-20 md:mb-0">
                 <p className="text-[10px] text-textMuted uppercase tracking-widest font-medium">
                     Disclaimer
                 </p>
                 <p className="text-xs text-textMuted mt-1 max-w-sm mx-auto">
                     This site is under active development. Attendance and marks data may not be 100% accurate or up-to-date. Please verify on the official portal.
                 </p>
-            </footer >
+            </footer>
 
-        </div >
+        </div>
     );
 }
 
