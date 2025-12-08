@@ -15,14 +15,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0a0a0a;
+    color: #888;
 }
 
 .header {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -66,17 +66,51 @@
 .logoutBtn:hover {
     color: white;
     border-color: white;
-    background: rgba(255, 255, 255, 0.05);
 }
 
-/* FSH Overall Attendance Card */
+/* Tab Navigation */
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.5rem;
+    border-radius: 12px;
+    overflow-x: auto;
+}
+
+.tab {
+    flex: 1;
+    min-width: 100px;
+    background: transparent;
+    border: none;
+    color: #888;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ccc;
+}
+
+.activeTab {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+/* Overall Card */
 .overallCard {
-    background: linear-gradient(145deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.05));
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: linear-gradient(145deg, rgba(34, 197, 94, 0.08), rgba(16, 185, 129, 0.03));
+    border: 1px solid rgba(34, 197, 94, 0.2);
     border-radius: 16px;
     padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    margin-bottom: 1.5rem;
 }
 
 .overallHeader {
@@ -84,20 +118,12 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
-    flex-wrap: wrap;
-    gap: 0.5rem;
 }
 
 .overallHeader h2 {
     font-size: 1.1rem;
-    font-weight: 600;
     color: #d4d4d8;
-}
-
-@media (min-width: 640px) {
-    .overallHeader h2 {
-        font-size: 1.25rem;
-    }
+    margin: 0;
 }
 
 .overallPct {
@@ -105,35 +131,76 @@
     font-weight: 800;
 }
 
-@media (min-width: 640px) {
-    .overallPct {
-        font-size: 2.5rem;
-    }
-}
-
 .overallStats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.2);
     padding: 1rem;
     border-radius: 12px;
-    margin-bottom: 1rem;
+    margin: 1rem 0;
+}
+
+.statItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.statLabel {
+    font-size: 0.7rem;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.statValue {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e4e4e7;
 }
 
 .overallAdvice {
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 12px;
     text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
 }
 
 .overallAdvice p {
     margin: 0;
-    line-height: 1.6;
 }
 
-/* Subject Cards Grid */
+.overallAdvice b {
+    font-size: 1.2rem;
+    color: white;
+}
+
+/* Progress Bar */
+.progressContainer {
+    position: relative;
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0.75rem 0;
+}
+
+.progressBar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.progressLabel {
+    position: absolute;
+    left: 75%;
+    top: -18px;
+    font-size: 0.65rem;
+    color: #666;
+    transform: translateX(-50%);
+}
+
+/* Grid */
 .grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -158,6 +225,7 @@
     }
 }
 
+/* Cards */
 .card {
     padding: 1.25rem;
     display: flex;
@@ -171,103 +239,152 @@
 .card:hover {
     border-color: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
 .cardHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .code {
     font-size: 0.7rem;
     background: rgba(255, 255, 255, 0.1);
-    padding: 0.25rem 0.5rem;
+    padding: 0.2rem 0.4rem;
     border-radius: 4px;
     color: #d4d4d8;
     font-family: monospace;
 }
 
 .pct {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     font-weight: 700;
 }
 
 .subjectName {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: white;
-    margin-bottom: 1rem;
-    line-height: 1.4;
-    min-height: 2.8em;
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+    min-height: 2.4em;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
-@media (min-width: 640px) {
-    .subjectName {
-        font-size: 1.05rem;
-    }
-}
-
-.statsRow {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 0.75rem;
-    border-radius: 8px;
-}
-
-.statItem {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-.statLabel {
-    font-size: 0.65rem;
-    color: #71717a;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-@media (min-width: 640px) {
-    .statLabel {
-        font-size: 0.75rem;
-    }
-}
-
-.statValue {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #e4e4e7;
-}
-
-@media (min-width: 640px) {
-    .statValue {
-        font-size: 1rem;
-    }
-}
-
 .adviceBox {
     margin-top: auto;
-    padding-top: 0.75rem;
+    padding-top: 0.5rem;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .adviceBox p {
-    font-size: 0.8rem;
     margin: 0;
+    font-size: 0.8rem;
 }
 
-@media (min-width: 640px) {
-    .adviceBox p {
-        font-size: 0.875rem;
-    }
+/* Predictor */
+.predictorContainer {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+.predictorCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+}
+
+.predictorCard h2 {
+    margin: 0 0 0.5rem;
+    color: white;
+}
+
+.predictorDesc {
+    color: #888;
+    margin-bottom: 2rem;
+}
+
+.predictorInput {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    color: #ccc;
+}
+
+.inputField {
+    width: 80px;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+.predictorResult {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.predictorCurrent,
+.predictorFuture {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.predictorCurrent span:first-child,
+.predictorFuture span:first-child {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 0.25rem;
+}
+
+.predictorArrow {
+    font-size: 2rem;
+    color: #666;
+}
+
+.bigPct {
+    font-size: 2.5rem;
+    font-weight: 800;
+}
+
+.predictorAdvice {
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.predictorAdvice p {
+    margin: 0;
+    font-weight: 600;
+}
+
+/* Marks Container */
+.marksContainer {
+    min-height: 200px;
+}
+
+.emptyState {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    color: #888;
 }

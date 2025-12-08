@@ -2,7 +2,7 @@ import axios from 'axios';
 import { wrapper } from 'axios-cookiejar-support';
 import { CookieJar } from 'tough-cookie';
 import * as cheerio from 'cheerio';
-import { AttendanceRecord, ScraperResult } from '../types';
+import { AttendanceRecord, ScraperResult, InternalMarksResult, SubjectMarks, MarkComponent } from '../types';
 import { calculateClassesToMiss, calculateClassesToAttend } from '../utils';
 
 export class FshClient {
@@ -53,6 +53,54 @@ export class FshClient {
     public async loginAndFetch(username: string, pass: string, captcha: string, csrf: string, cookieStr: string): Promise<ScraperResult> {
         console.error('[FshClient] loginAndFetch called');
 
+        await this.restoreCookies(cookieStr);
+
+        const params = this.buildLoginParams(username, pass, captcha, csrf);
+        const loginUrl = '/students/loginManager/youLogin.jsp';
+
+        try {
+            console.error('[FshClient] Posting to login...');
+            const loginResp = await this.client.post(loginUrl, params.toString(), {
+                maxRedirects: 5,
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+
+            if (loginResp.data.includes('Invalid credentials') || loginResp.data.includes('Invalid Captcha')) {
+                const $ = cheerio.load(loginResp.data);
+                const errorMsg = $('.alert-danger').text().trim() || 'Login failed (Invalid Credentials/Captcha)';
+                return { success: false, error: errorMsg };
+            }
+
+            const attendanceUrl = '/students/report/studentAttendanceDetails.jsp';
+            console.error('[FshClient] Fetching attendance page...');
+            const attResp = await this.client.get(attendanceUrl);
+
+            return this.parseAttendance(attResp.data, username);
+
+        } catch (e: any) {
+            console.error('[FshClient] Error:', e.message);
+            return { success: false, error: e.message };
+        }
+    }
+
+    public async fetchInternalMarks(cookieStr: string, username: string): Promise<InternalMarksResult> {
+        console.error('[FshClient] fetchInternalMarks called');
+
+        try {
+            await this.restoreCookies(cookieStr);
+
+            const marksUrl = '/students/report/studentInternalMarkDetails.jsp';
+            console.error('[FshClient] Fetching internal marks page...');
+            const marksResp = await this.client.get(marksUrl);
+
+            return this.parseInternalMarks(marksResp.data, username);
+        } catch (e: any) {
+            console.error('[FshClient] Internal Marks Error:', e.message);
+            return { success: false, error: e.message };
+        }
+    }
+
+    private async restoreCookies(cookieStr: string) {
         if (cookieStr) {
             const cookieParts = cookieStr.split(';').map(s => s.trim());
             for (const part of cookieParts) {
@@ -65,7 +113,9 @@ export class FshClient {
                 }
             }
         }
+    }
 
+    private buildLoginParams(username: string, pass: string, captcha: string, csrf: string): URLSearchParams {
         const params = new URLSearchParams();
         params.append('txtAN', username);
         params.append('txtSK', pass);
@@ -77,82 +127,34 @@ export class FshClient {
         params.append('hdnCSRF', csrf);
         params.append('txtPageAction', '1');
         params.append('_tries', '1');
-
-        const loginUrl = '/students/loginManager/youLogin.jsp';
-
-        try {
-            console.error('[FshClient] Posting to login...');
-            const loginResp = await this.client.post(loginUrl, params.toString(), {
-                maxRedirects: 5,
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-            });
-
-            console.error('[FshClient] Login response received');
-
-            if (loginResp.data.includes('Invalid credentials') || loginResp.data.includes('Invalid Captcha')) {
-                const $ = cheerio.load(loginResp.data);
-                const errorMsg = $('.alert-danger').text().trim() || 'Login failed (Invalid Credentials/Captcha)';
-                return { success: false, error: errorMsg };
-            }
-
-            const attendanceUrl = '/students/report/studentAttendanceDetails.jsp';
-
-            console.error('[FshClient] Fetching attendance page...');
-            const attResp = await this.client.get(attendanceUrl);
-            const attHtml = attResp.data;
-
-            return this.parseAttendance(attHtml, username);
-
-        } catch (e: any) {
-            console.error('[FshClient] Error:', e.message);
-            return {
-                success: false,
-                error: e.message
-            };
-        }
+        return params;
     }
 
     private parseAttendance(html: string, username: string): ScraperResult {
         const $ = cheerio.load(html);
         const data: any[] = [];
 
-        // FSH Table columns (from screenshot):
-        // 0: Code, 1: Description, 2: Max hours, 3: Att hours, 4: Absent, 5: Average %, 6: OD/ML, 7: Total %
-
         $('table').each((_, table) => {
             const $t = $(table);
             const txt = $t.text().toLowerCase();
 
-            // Look for attendance table
             if (txt.includes('code') && (txt.includes('max') || txt.includes('att') || txt.includes('average'))) {
-                console.error('[FshClient] Found attendance table');
-
                 $t.find('tr').each((i, row) => {
                     const cols = $(row).find('td');
                     if (cols.length < 6) return;
 
                     const code = $(cols[0]).text().trim();
-
-                    // Skip header row or total row
                     if (!code || code.toLowerCase().includes('code') || code.toLowerCase() === 'total') return;
 
-                    // Column 1: Subject Name
                     const name = $(cols[1]).text().trim();
-
-                    // Column 2: Max. hours (Total)
                     const maxHours = parseFloat($(cols[2]).text().trim()) || 0;
-
-                    // Column 3: Att. hours (Attended)
                     const attHours = parseFloat($(cols[3]).text().trim()) || 0;
 
-                    // Column 5 or 7: Percentage (Average % or Total %)
                     let pct = NaN;
-                    // Try column 5 first (Average %)
                     const avgPct = parseFloat($(cols[5]).text().trim());
                     if (!isNaN(avgPct) && avgPct >= 0 && avgPct <= 100) {
                         pct = avgPct;
                     }
-                    // Fallback to column 7 (Total %)
                     if (isNaN(pct) && cols.length > 7) {
                         const totalPct = parseFloat($(cols[7]).text().trim());
                         if (!isNaN(totalPct) && totalPct >= 0 && totalPct <= 100) {
@@ -161,8 +163,6 @@ export class FshClient {
                     }
 
                     if (isNaN(pct)) return;
-
-                    console.error(`[FshClient] Parsed: ${code} - Max:${maxHours}, Att:${attHours}, %:${pct}`);
 
                     data.push({
                         subjectCode: code,
@@ -179,8 +179,6 @@ export class FshClient {
             return { success: false, error: 'Attendance table not found in response' };
         }
 
-        console.error(`[FshClient] Found ${data.length} subjects`);
-
         const processedRecords: AttendanceRecord[] = data.map((r: any) => ({
             ...r,
             classesToMiss: calculateClassesToMiss(r.totalHours, r.attendedHours),
@@ -193,6 +191,56 @@ export class FshClient {
                 studentName: username,
                 registrationNumber: username,
                 records: processedRecords
+            }
+        };
+    }
+
+    private parseInternalMarks(html: string, username: string): InternalMarksResult {
+        const $ = cheerio.load(html);
+        const subjects: SubjectMarks[] = [];
+
+        // Parse the main marks table
+        $('table').each((_, table) => {
+            const $t = $(table);
+            const txt = $t.text().toLowerCase();
+
+            if (txt.includes('code') && txt.includes('description') && txt.includes('mark')) {
+                $t.find('tr').each((i, row) => {
+                    const cols = $(row).find('td');
+                    if (cols.length < 3) return;
+
+                    const code = $(cols[0]).text().trim();
+                    if (!code || code.toLowerCase().includes('code')) return;
+
+                    const name = $(cols[1]).text().trim();
+                    const marksText = $(cols[2]).text().trim();
+
+                    // Parse "40.00 / 50.00" format
+                    const marksParts = marksText.split('/').map(s => parseFloat(s.trim()));
+                    const marks = marksParts[0] || 0;
+                    const maxMarks = marksParts[1] || 50;
+
+                    subjects.push({
+                        subjectCode: code,
+                        subjectName: name,
+                        totalMarks: marks,
+                        maxTotalMarks: maxMarks,
+                        components: [] // Will be populated from detail view if needed
+                    });
+                });
+            }
+        });
+
+        if (subjects.length === 0) {
+            return { success: false, error: 'Internal marks table not found' };
+        }
+
+        return {
+            success: true,
+            data: {
+                studentName: username,
+                registrationNumber: username,
+                subjects
             }
         };
     }
