@@ -53,7 +53,9 @@
 }
 
 .logoIcon {
-    font-size: 1.5rem;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
 }
 
 .logoText {
@@ -97,7 +99,9 @@
 }
 
 .navIcon {
-    font-size: 1.1rem;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .userSection {

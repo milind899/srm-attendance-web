@@ -89,7 +89,11 @@ export default function Dashboard() {
             {/* Sidebar */}
             <aside className={styles.sidebar}>
                 <div className={styles.logo}>
-                    <span className={styles.logoIcon}>📚</span>
+                    <svg className={styles.logoIcon} viewBox="0 0 24 24" fill="none">
+                        <rect x="2" y="4" width="6" height="16" rx="1" fill="#10b981" />
+                        <rect x="9" y="8" width="6" height="12" rx="1" fill="#22d3ee" />
+                        <rect x="16" y="2" width="6" height="18" rx="1" fill="#f472b6" />
+                    </svg>
                     <span className={styles.logoText}>Attend</span>
                 </div>
 
@@ -98,7 +102,12 @@ export default function Dashboard() {
                         className={`${styles.navItem} ${activeTab === 'attendance' ? styles.navActive : ''}`}
                         onClick={() => setActiveTab('attendance')}
                     >
-                        <span className={styles.navIcon}>📊</span>
+                        <svg className={styles.navIcon} viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="3" width="7" height="7" rx="1.5" fill="#22d3ee" />
+                            <rect x="3" y="14" width="7" height="7" rx="1.5" fill="#22d3ee" opacity="0.5" />
+                            <rect x="14" y="3" width="7" height="7" rx="1.5" fill="#22d3ee" opacity="0.5" />
+                            <rect x="14" y="14" width="7" height="7" rx="1.5" fill="#22d3ee" opacity="0.3" />
+                        </svg>
                         <span>Attendance</span>
                     </button>
                     {department === 'FSH' && (
@@ -107,14 +116,21 @@ export default function Dashboard() {
                                 className={`${styles.navItem} ${activeTab === 'marks' ? styles.navActive : ''}`}
                                 onClick={() => setActiveTab('marks')}
                             >
-                                <span className={styles.navIcon}>📝</span>
+                                <svg className={styles.navIcon} viewBox="0 0 24 24" fill="none">
+                                    <rect x="4" y="4" width="16" height="16" rx="2" fill="#f472b6" opacity="0.2" />
+                                    <path d="M7 9h10M7 13h6M7 17h8" stroke="#f472b6" strokeWidth="2" strokeLinecap="round" />
+                                </svg>
                                 <span>Marks</span>
                             </button>
                             <button
                                 className={`${styles.navItem} ${activeTab === 'predictor' ? styles.navActive : ''}`}
                                 onClick={() => setActiveTab('predictor')}
                             >
-                                <span className={styles.navIcon}>🔮</span>
+                                <svg className={styles.navIcon} viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="9" fill="#a855f7" opacity="0.2" />
+                                    <circle cx="12" cy="12" r="5" fill="#a855f7" opacity="0.5" />
+                                    <circle cx="12" cy="12" r="2" fill="#a855f7" />
+                                </svg>
                                 <span>Predictor</span>
                             </button>
                         </>
