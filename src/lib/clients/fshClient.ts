@@ -170,7 +170,8 @@ export class FshClient {
             const $t = $(table);
             const txt = $t.text().toLowerCase();
 
-            if (txt.includes('code') && (txt.includes('%') || txt.includes('max') || txt.includes('att') || txt.includes('hour') || txt.includes('total'))) {
+            if (true) { // Always check the table content by parsing rows
+                const currentTableData: any[] = [];
                 $t.find('tr').each((i, row) => {
                     const cols = $(row).find('td');
                     if (cols.length < 6) return;
@@ -183,20 +184,23 @@ export class FshClient {
                     const attHours = parseFloat($(cols[3]).text().trim()) || 0;
 
                     let pct = NaN;
-                    const avgPct = parseFloat($(cols[5]).text().trim());
-                    if (!isNaN(avgPct) && avgPct >= 0 && avgPct <= 100) {
-                        pct = avgPct;
-                    }
-                    if (isNaN(pct) && cols.length > 7) {
-                        const totalPct = parseFloat($(cols[7]).text().trim());
-                        if (!isNaN(totalPct) && totalPct >= 0 && totalPct <= 100) {
-                            pct = totalPct;
+
+                    // Try to find percentage in common columns
+                    const possibleIndices = [4, 5, 6, 7, 8];
+                    for (const idx of possibleIndices) {
+                        if (cols.length > idx) {
+                            const valText = $(cols[idx]).text().trim().replace('%', '');
+                            const val = parseFloat(valText);
+                            if (!isNaN(val) && val >= 0 && val <= 100) {
+                                pct = val;
+                                break;
+                            }
                         }
                     }
 
                     if (isNaN(pct)) return;
 
-                    data.push({
+                    currentTableData.push({
                         subjectCode: code,
                         subjectName: name,
                         totalHours: maxHours,
@@ -204,6 +208,11 @@ export class FshClient {
                         percentage: Math.round(pct * 100) / 100
                     });
                 });
+
+                if (currentTableData.length > 0) {
+                    data.push(...currentTableData);
+                    return false; // Break cheerio loop
+                }
             }
         });
 
