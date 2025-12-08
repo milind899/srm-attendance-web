@@ -430,88 +430,7 @@ export default function Dashboard() {
                                 {/* Grades Cards Grid - Horizontal Scroll on Mobile */}
                                 {subjectsWithMarks.length > 0 ? (
                                     <div className="opacity-0 animate-blur-in delay-200">
-                                        {/* Mobile: Horizontal Scroll */}
-                                        <div className="overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide sm:hidden">
-                                            <div className="flex gap-3" style={{ width: 'max-content' }}>
-                                                {subjectsWithMarks.map((subject, i) => {
-                                                    const targetGrade = targetGrades[subject.subjectCode] || 'A';
-                                                    const requiredEndSem = calculateRequiredEndSem(subject.totalMarks, targetGrade);
-                                                    const maxEndSem = department === 'ENT' ? 75 : 100;
-                                                    const isPossible = requiredEndSem <= maxEndSem;
-                                                    const gradeInfo = GRADES.find(g => g.grade === targetGrade) || GRADES[2];
-
-                                                    return (
-                                                        <div
-                                                            key={`grade-${subject.subjectCode}-${i}`}
-                                                            className="w-[85vw] max-w-[300px] flex-shrink-0 snap-center bg-surface border border-border rounded-xl p-4"
-                                                        >
-                                                            {/* Header */}
-                                                            <div className="flex justify-between items-start mb-3">
-                                                                <div className="flex-1 min-w-0 mr-2">
-                                                                    <h3 className="font-semibold text-white text-sm truncate">
-                                                                        {subject.subjectName}
-                                                                    </h3>
-                                                                    <p className="text-xs text-textMuted">{subject.subjectCode}</p>
-                                                                </div>
-                                                                <div className="text-right">
-                                                                    <span className="text-xs text-textMuted">{subject.totalMarks.toFixed(0)}</span>
-                                                                    <span className="text-base font-bold text-white ml-1">{subject.maxTotalMarks}</span>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Internal Display */}
-                                                            <div className="flex justify-between text-sm mb-3 pb-3 border-b border-border">
-                                                                <span className="text-textMuted">Internal</span>
-                                                                <span className="text-white">{subject.totalMarks.toFixed(2)} / {subject.maxTotalMarks}</span>
-                                                            </div>
-
-                                                            {/* Grade Selector */}
-                                                            <div className="mb-3">
-                                                                <div className="flex justify-between text-[10px] text-textMuted mb-1">
-                                                                    {['C', 'B', 'B+', 'A', 'A+', 'O'].map((g) => (
-                                                                        <span
-                                                                            key={g}
-                                                                            className={`cursor-pointer ${targetGrade === g ? gradeInfo.color + ' font-bold' : ''}`}
-                                                                            onClick={() => setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: g }))}
-                                                                        >
-                                                                            {g}
-                                                                        </span>
-                                                                    ))}
-                                                                </div>
-                                                                <input
-                                                                    type="range"
-                                                                    min="0"
-                                                                    max="5"
-                                                                    value={['C', 'B', 'B+', 'A', 'A+', 'O'].indexOf(targetGrade)}
-                                                                    onChange={(e) => {
-                                                                        const grades = ['C', 'B', 'B+', 'A', 'A+', 'O'];
-                                                                        setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: grades[parseInt(e.target.value)] }));
-                                                                    }}
-                                                                    className="w-full h-1.5 bg-surfaceHighlight rounded-full appearance-none cursor-pointer slider-thumb"
-                                                                />
-                                                            </div>
-
-                                                            {/* Goal for End Sem */}
-                                                            <div className="flex justify-between items-center p-2.5 rounded-lg bg-background border border-border">
-                                                                <span className="text-sm text-textMuted">Goal end sem</span>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className={`font-bold ${isPossible ? 'text-white' : 'text-red-400'}`}>
-                                                                        {requiredEndSem.toFixed(0)}
-                                                                    </span>
-                                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${isPossible ? gradeInfo.bg + ' text-white' : 'bg-red-600 text-white'
-                                                                        }`}>
-                                                                        {isPossible ? '100' : '!'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-
-                                        {/* Desktop: Grid */}
-                                        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                             {subjectsWithMarks.map((subject, i) => {
                                                 const targetGrade = targetGrades[subject.subjectCode] || 'A';
                                                 const requiredEndSem = calculateRequiredEndSem(subject.totalMarks, targetGrade);
@@ -521,112 +440,103 @@ export default function Dashboard() {
 
                                                 return (
                                                     <div
-                                                        key={`grade-desktop-${subject.subjectCode}-${i}`}
-                                                        className="group relative bg-[#09090b] border border-white/5 rounded-2xl p-5 hover:border-primary/20 transition-all duration-300 hover:shadow-[0_0_30px_rgba(79,70,229,0.1)] overflow-hidden"
+                                                        key={`grade-${subject.subjectCode}-${i}`}
+                                                        className="bg-surface border border-border rounded-xl p-4"
                                                     >
-                                                        {/* Card Gradient */}
-                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
-
                                                         {/* Header */}
-                                                        <div className="relative flex justify-between items-start mb-4">
-                                                            <div className="flex-1 min-w-0 mr-4">
-                                                                <h3 className="font-medium text-white text-sm truncate leading-snug tracking-wide">
+                                                        <div className="flex justify-between items-start mb-3">
+                                                            <div className="flex-1 min-w-0 mr-2">
+                                                                <h3 className="font-semibold text-white text-sm truncate">
                                                                     {subject.subjectName}
                                                                 </h3>
-                                                                <p className="text-[11px] text-white/40 mt-0.5 font-mono">{subject.subjectCode}</p>
+                                                                <p className="text-xs text-textMuted">{subject.subjectCode}</p>
                                                             </div>
-                                                            <div className="flex flex-col items-end">
-                                                                <span className="text-2xl font-bold text-white tracking-tighter">{subject.totalMarks.toFixed(1)}</span>
-                                                                <span className="text-[10px] text-white/40 uppercase tracking-wider font-semibold">Internal</span>
+                                                            <div className="text-right">
+                                                                <span className="text-xs text-textMuted">{subject.totalMarks.toFixed(0)}</span>
+                                                                <span className="text-base font-bold text-white ml-1">{subject.maxTotalMarks}</span>
                                                             </div>
                                                         </div>
 
+                                                        {/* Internal Display */}
+                                                        <div className="flex justify-between text-sm mb-3 pb-3 border-b border-border">
+                                                            <span className="text-textMuted">Internal</span>
+                                                            <span className="text-white">{subject.totalMarks.toFixed(2)} / {subject.maxTotalMarks}</span>
+                                                        </div>
+
                                                         {/* Grade Selector */}
-                                                        <div className="mb-4 relative">
-                                                            <div className="flex justify-between text-[10px] font-medium text-white/40 mb-2 px-1">
+                                                        <div className="mb-3">
+                                                            <div className="flex justify-between text-[10px] text-textMuted mb-1">
                                                                 {['C', 'B', 'B+', 'A', 'A+', 'O'].map((g) => (
                                                                     <span
                                                                         key={g}
-                                                                        className={`cursor-pointer transition-colors hover:text-white ${targetGrade === g ? gradeInfo.color + ' opacity-100 scale-110' : ''}`}
+                                                                        className={`cursor-pointer ${targetGrade === g ? gradeInfo.color + ' font-bold' : ''}`}
                                                                         onClick={() => setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: g }))}
                                                                     >
                                                                         {g}
                                                                     </span>
                                                                 ))}
                                                             </div>
-                                                            <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
-                                                                <input
-                                                                    type="range"
-                                                                    min="0"
-                                                                    max="5"
-                                                                    value={['C', 'B', 'B+', 'A', 'A+', 'O'].indexOf(targetGrade)}
-                                                                    onChange={(e) => {
-                                                                        const grades = ['C', 'B', 'B+', 'A', 'A+', 'O'];
-                                                                        setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: grades[parseInt(e.target.value)] }));
-                                                                    }}
-                                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                                                />
-                                                                <div
-                                                                    className={`absolute top-0 left-0 h-full transition-all duration-300 ${gradeInfo.bg} shadow-[0_0_15px_currentColor]`}
-                                                                    style={{ width: `${(['C', 'B', 'B+', 'A', 'A+', 'O'].indexOf(targetGrade) / 5) * 100}%` }}
-                                                                />
-                                                                <div
-                                                                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg pointer-events-none transition-all duration-300"
-                                                                    style={{ left: `calc(${(['C', 'B', 'B+', 'A', 'A+', 'O'].indexOf(targetGrade) / 5) * 100}% - 8px)` }}
-                                                                />
-                                                            </div>
+                                                            <input
+                                                                type="range"
+                                                                min="0"
+                                                                max="5"
+                                                                value={['C', 'B', 'B+', 'A', 'A+', 'O'].indexOf(targetGrade)}
+                                                                onChange={(e) => {
+                                                                    const grades = ['C', 'B', 'B+', 'A', 'A+', 'O'];
+                                                                    setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: grades[parseInt(e.target.value)] }));
+                                                                }}
+                                                                className="w-full h-1.5 bg-surfaceHighlight rounded-full appearance-none cursor-pointer slider-thumb"
+                                                            />
                                                         </div>
 
                                                         {/* Goal for End Sem */}
-                                                        <div className="flex justify-between items-center p-3 rounded-xl bg-white/[0.03] border border-white/5 group-hover:bg-white/[0.05] transition-colors">
-                                                            <span className="text-xs text-white/60 font-medium">Goal end sem</span>
+                                                        <div className="flex justify-between items-center p-2.5 rounded-lg bg-background border border-border">
+                                                            <span className="text-sm text-textMuted">Goal end sem</span>
                                                             <div className="flex items-center gap-2">
-                                                                <span className={`text-lg font-bold tracking-tight ${isPossible ? 'text-white' : 'text-red-400'}`}>
+                                                                <span className={`font-bold ${isPossible ? 'text-white' : 'text-red-400'}`}>
                                                                     {requiredEndSem.toFixed(0)}
                                                                 </span>
-                                                                <span className="text-[10px] text-white/30">/ {maxEndSem}</span>
+                                                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${isPossible ? gradeInfo.bg + ' text-white' : 'bg-red-600 text-white'
+                                                                    }`}>
+                                                                    {isPossible ? '100' : '!'}
+                                                                </span>
                                                             </div>
                                                         </div>
-
-                                                        {!isPossible && (
-                                                            <div className="mt-2 text-center relative">
-                                                                <div className="absolute inset-0 bg-red-500/10 blur-xl pointer-events-none" />
-                                                                <p className="text-[10px] text-red-400 font-medium relative z-10">
-                                                                    Impossible to achieve
-                                                                </p>
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 );
                                             })}
                                         </div>
                                     </div>
-                                ) : (
-                                    <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
-                                        <p className="text-textMuted mb-6">No marks data. Fetch marks first to use Grade Predictor.</p>
-                                        <button onClick={() => setActiveTab('marks')} className="bg-[#EEEEF0] text-black px-6 py-3 rounded-full font-medium hover:bg-white transition-colors">
-                                            Go to Marks →
-                                        </button>
-                                    </div>
+
+                                    {/* Desktop: Grid - Merged into responsive grid above, removing backup */}
+                            </div>
+                        ) : (
+                        <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
+                            <p className="text-textMuted mb-6">No marks data. Fetch marks first to use Grade Predictor.</p>
+                            <button onClick={() => setActiveTab('marks')} className="bg-[#EEEEF0] text-black px-6 py-3 rounded-full font-medium hover:bg-white transition-colors">
+                                Go to Marks →
+                            </button>
+                        </div>
                                 )}
-                            </>
-                        )}
-                    </div>
+                    </>
                 )}
+        </div>
+    )
+}
 
-            </main>
+            </main >
 
-            {/* Footer / Disclaimer */}
-            <footer className="py-8 text-center opacity-60 hover:opacity-100 transition-opacity mb-20 md:mb-0">
+    {/* Footer / Disclaimer */ }
+    < footer className = "py-8 text-center opacity-60 hover:opacity-100 transition-opacity mb-20 md:mb-0" >
                 <p className="text-[10px] text-textMuted uppercase tracking-widest font-medium">
                     Disclaimer
                 </p>
                 <p className="text-xs text-textMuted mt-1 max-w-sm mx-auto">
                     This site is under active development. Attendance and marks data may not be 100% accurate or up-to-date. Please verify on the official portal.
                 </p>
-            </footer>
+            </footer >
 
-        </div>
+        </div >
     );
 }
 
