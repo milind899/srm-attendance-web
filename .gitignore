@@ -29,6 +29,27 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
+*.txt
+
+# screenshots and artifacts
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.svg
+
+# scripts
+*.js
+!src/*.js
+!public/*.js
+!next.config.mjs
+!postcss.config.mjs
+!eslint.config.mjs
+
+# temp files
+*.html
+!reference_ui/index.html
 
 # env files (can opt-in for committing if needed)
 .env*

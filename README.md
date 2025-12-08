@@ -53,18 +53,20 @@ This application uses Puppeteer to scrape data from the SRM student portal.
 
 ## License
 
-This project is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)**.
+## License
+
+This project is licensed under the **Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License (CC BY-NC-ND 4.0)**.
 
 **You are free to:**
 *   **Share** — copy and redistribute the material in any medium or format.
-*   **Adapt** — remix, transform, and build upon the material.
 
 **Under the following terms:**
-*   **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+*   **Attribution** — You must give appropriate credit.
 *   **NonCommercial** — You may not use the material for commercial purposes.
+*   **NoDerivatives** — If you remix, transform, or build upon the material, you may not distribute the modified material.
 
 See the [LICENSE](LICENSE) file for details.
 
 ## Disclaimer
 
-This is a student-developed project and is not officially affiliated with SRM Institute of Science and Technology. Use it at your own discretion.
+This project is a student-built tool and is not affiliated with, endorsed by, or representing SRM Institute of Science and Technology (SRMIST). It is intended only for personal and educational use.
