@@ -133,18 +133,17 @@ export default function Dashboard() {
 
             {/* === ATTENDANCE TAB === */}
             {activeTab === 'attendance' && (
-                <>
-                    {/* FSH Overall Card */}
+                <div className={styles.dashboardGrid}>
+                    {/* FSH Overall Card - Sidebar on desktop */}
                     {department === 'FSH' && (
                         <div className={styles.overallCard}>
                             <div className={styles.overallHeader}>
-                                <h2>📊 Overall Attendance</h2>
+                                <h2>📊 Overall</h2>
                                 <span className={styles.overallPct} style={{ color: overallPercentage >= 75 ? '#22c55e' : '#ef4444' }}>
                                     {overallPercentage}%
                                 </span>
                             </div>
 
-                            {/* Overall Progress Bar */}
                             <div className={styles.progressContainer}>
                                 <div
                                     className={styles.progressBar}
@@ -155,7 +154,6 @@ export default function Dashboard() {
                                                 : 'linear-gradient(90deg, #ef4444, #dc2626)'
                                     }}
                                 />
-                                <span className={styles.progressLabel}>75%</span>
                             </div>
 
                             <div className={styles.overallStats}>
@@ -164,11 +162,11 @@ export default function Dashboard() {
                                     <span className={styles.statValue}>{totalHours}</span>
                                 </div>
                                 <div className={styles.statItem}>
-                                    <span className={styles.statLabel}>Attended</span>
+                                    <span className={styles.statLabel}>Present</span>
                                     <span className={styles.statValue}>{attendedHours}</span>
                                 </div>
                                 <div className={styles.statItem}>
-                                    <span className={styles.statLabel}>Required</span>
+                                    <span className={styles.statLabel}>Need</span>
                                     <span className={styles.statValue}>{requiredHours}</span>
                                 </div>
                             </div>
@@ -176,23 +174,24 @@ export default function Dashboard() {
                             <div className={styles.overallAdvice}>
                                 {overallPercentage >= 75 ? (
                                     <p style={{ color: '#22c55e' }}>
-                                        ✅ Safe! Can miss <b>{canMissHours}</b> more hours
+                                        ✅ Can miss <b>{canMissHours}</b> more
                                     </p>
                                 ) : (
                                     <p style={{ color: '#ef4444' }}>
-                                        ⚠️ Need to attend <b>{needToAttendHours}</b> more hours
+                                        ⚠️ Attend <b>{needToAttendHours}</b> more
                                     </p>
                                 )}
                             </div>
                         </div>
                     )}
 
+                    {/* Subject Cards Grid */}
                     <div className={styles.grid}>
                         {data.records.map((record, index) => (
                             <SubjectCard key={`${record.subjectCode}-${index}`} record={record} showProgressBar={department === 'FSH'} />
                         ))}
                     </div>
-                </>
+                </div>
             )}
 
             {/* === INTERNAL MARKS TAB === */}
