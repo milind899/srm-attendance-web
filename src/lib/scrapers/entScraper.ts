@@ -5,26 +5,27 @@ const LOGIN_URL = 'https://academia.srmist.edu.in/';
 
 export async function scrapeEntAttendance(username: string, password: string): Promise<ScraperResult> {
     let browser = null;
+    let page: Page | null = null;
     try {
         console.log('[ENT] Starting scraper...');
         browser = await puppeteer.launch({
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
         });
-        const page = await browser.newPage();
+        page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 900 });
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
         // Navigate to Login
         console.log('[ENT] Navigating...');
-        await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
         // Find login iframe
         console.log('[ENT] Looking for login form...');
         let loginFrame: Frame | Page = page;
 
         try {
-            const iframeEl = await page.waitForSelector('#signinFrame', { timeout: 10000 });
+            const iframeEl = await page.waitForSelector('#signinFrame', { timeout: 15000 });
             if (iframeEl) {
                 const frame = await iframeEl.contentFrame();
                 if (frame) loginFrame = frame;
@@ -36,77 +37,82 @@ export async function scrapeEntAttendance(username: string, password: string): P
         // Helper for robust clicking
         const safeClick = async (element: any) => {
             try {
-                await element.click();
+                if (element) await element.click();
             } catch (error) {
-                console.log('[ENT] Standard click failed, trying JS click...', error instanceof Error ? error.message : '');
-                await element.evaluate((el: HTMLElement) => el.click());
+                console.log('[ENT] Standard click failed, trying JS click...');
+                try {
+                    await element.evaluate((el: HTMLElement) => el.click());
+                } catch (e) { }
             }
         };
 
         // Enter username
         console.log('[ENT] Entering username...');
-        await loginFrame.waitForSelector('#login_id', { timeout: 10000 });
+        await loginFrame.waitForSelector('#login_id', { timeout: 15000 });
         const usernameField = await loginFrame.$('#login_id');
         if (!usernameField) throw new Error('Username field not found');
 
         await safeClick(usernameField);
-        await usernameField.click({ clickCount: 3 }); // Ensure focus
+        await usernameField.click({ clickCount: 3 });
         await usernameField.type(username);
 
         // Click Next
         const nextBtn = await loginFrame.$('#nextbtn');
         if (nextBtn) {
-            await new Promise(r => setTimeout(r, 500)); // Small stabilization wait
+            console.log('[ENT] Clicking Next button...');
+            await new Promise(r => setTimeout(r, 1000));
             await safeClick(nextBtn);
         }
 
         // Wait for password field (optimized with polling)
-        let passwordField = null;
-        for (let attempt = 0; attempt < 10; attempt++) {
-            try {
-                // Check all iframes
-                const iframes = await page.$$('#signinFrame');
-                for (const iframe of iframes) {
-                    const frame = await iframe.contentFrame();
-                    if (frame) {
-                        const pwd = await frame.$('#password');
-                        if (pwd) {
-                            const isVisible = await frame.evaluate((el) => {
-                                const style = window.getComputedStyle(el);
-                                return style && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
-                            }, pwd);
+        let passwordField: any = null;
 
-                            if (isVisible) {
-                                loginFrame = frame;
-                                passwordField = pwd;
-                                break;
-                            }
-                        }
-                    }
-                }
-            } catch (e) { }
+        for (let attempt = 0; attempt < 25; attempt++) {
+            if (attempt % 5 === 0) console.log(`[ENT] Waiting for password field... (Attempt ${attempt}/25)`);
 
-            if (passwordField) break;
-
-            // Check current frame
-            if (!passwordField) {
+            // Retry clicking next if stuck
+            if (attempt === 8 && !passwordField) {
+                console.log('[ENT] Password field still missing, re-clicking Next...');
                 try {
-                    const pwd = await loginFrame.$('#password');
-                    if (pwd && await loginFrame.evaluate((el) => {
-                        const style = window.getComputedStyle(el);
-                        return style && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
-                    }, pwd)) {
-                        passwordField = pwd;
-                        break;
+                    const frames = page.frames();
+                    for (const f of frames) {
+                        const btn = await f.$('#nextbtn');
+                        if (btn) {
+                            await safeClick(btn);
+                            break;
+                        }
                     }
                 } catch (e) { }
             }
 
+            // Search all frames
+            const frames = page.frames();
+            for (const frame of frames) {
+                try {
+                    const pwd = await frame.$('#password');
+                    if (pwd) {
+                        const isVisible = await frame.evaluate((el: Element) => {
+                            const style = window.getComputedStyle(el);
+                            return style && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+                        }, pwd);
+
+                        if (isVisible) {
+                            console.log('[ENT] Found password field in frame:', frame.name() || frame.url());
+                            loginFrame = frame;
+                            passwordField = pwd;
+                            break;
+                        }
+                    }
+                } catch (e) { }
+            }
+
+            if (passwordField) break;
             await new Promise(r => setTimeout(r, 500));
         }
 
         if (!passwordField) {
-            throw new Error('Password field not found. Check your username.');
+            await page.screenshot({ path: 'ent_password_fail.png' });
+            throw new Error('Password field not found. Login page might be stuck.');
         }
 
         console.log('[ENT] Entering password...');
@@ -125,7 +131,7 @@ export async function scrapeEntAttendance(username: string, password: string): P
 
         // Wait for login
         try {
-            await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 });
+            await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 });
         } catch (e) { }
 
         // Check login success
@@ -154,9 +160,35 @@ export async function scrapeEntAttendance(username: string, password: string): P
         };
 
         console.log('[ENT] Waiting for data table...');
-        await waitForTable();
+        const tableFound = await waitForTable();
 
-        // Extract attendance
+        if (!tableFound) {
+            console.log('[ENT] Table not found via hash, trying menu click...');
+            const frames = page.frames();
+            let clicked = false;
+            for (const frame of frames) {
+                const link = await frame.$('a[href*="My_Attendance"], a:contains("Attendance")') ||
+                    await frame.evaluateHandle(() => {
+                        const links = Array.from(document.querySelectorAll('a'));
+                        return links.find(l => l.innerText.includes('Attendance') || l.href.includes('My_Attendance'));
+                    });
+
+                if (link && typeof link.click === 'function') {
+                    console.log('[ENT] Clicking attendance link in frame:', frame.name());
+                    try {
+                        await link.click();
+                        clicked = true;
+                        break;
+                    } catch (e) { }
+                }
+            }
+
+            if (clicked) {
+                await new Promise(r => setTimeout(r, 5000));
+                await waitForTable();
+            }
+        }
+
         console.log('[ENT] Extracting data...');
         const allFrames = page.frames();
         let records: any[] = [];
@@ -169,7 +201,6 @@ export async function scrapeEntAttendance(username: string, password: string): P
 
                     for (const t of tables) {
                         const fullText = t.innerText.toLowerCase();
-                        // Relaxed check: Just look for 'code' and some attendance indicator
                         if (!fullText.includes('code') || (!fullText.includes('attn') && !fullText.includes('max') && !fullText.includes('hours'))) continue;
 
                         const rows = Array.from((t as HTMLTableElement).rows);
@@ -178,7 +209,6 @@ export async function scrapeEntAttendance(username: string, password: string): P
                         let headerIdx = -1;
                         for (let i = 0; i < Math.min(10, rows.length); i++) {
                             const rowText = rows[i].innerText.toLowerCase();
-                            // Headers usually contain "Course Code" and "Attn" or "Max Hours"
                             if (rowText.includes('code') && (rowText.includes('attn') || rowText.includes('max') || rowText.includes('hours'))) {
                                 headerIdx = i;
                                 break;
@@ -194,25 +224,19 @@ export async function scrapeEntAttendance(username: string, password: string): P
                             const texts = Array.from(cells).map(c => c.innerText.trim());
                             let code = texts[0].split('\n')[0].replace(/(Regular|Enrichment|Practical|Theory|Online|Lab)/gi, '').trim();
 
-                            // Basic validation
                             if (!code || code.length < 3 || code.toLowerCase().includes('total')) continue;
 
                             let title = texts[1];
                             let category = 'Theory';
 
-                            // Try to deduce category from text if column 2 exists
                             if (texts[2]) {
                                 const catText = texts[2].toLowerCase();
                                 if (catText.includes('practical') || catText.includes('lab')) category = 'Practical';
                             } else {
-                                // Or from title/code
                                 if (title.toLowerCase().includes('lab') || title.toLowerCase().includes('practical')) category = 'Practical';
                             }
 
-                            // Percentage is usually the last column or one of the last
                             let pct = -1;
-
-                            // Scan from the end for a valid percentage
                             for (let j = texts.length - 1; j >= 3; j--) {
                                 const valStr = texts[j].replace('%', '').trim();
                                 if (/^\d+(\.\d+)?$/.test(valStr)) {
@@ -251,11 +275,35 @@ export async function scrapeEntAttendance(username: string, password: string): P
             return { success: false, error: 'No attendance data found. Try again.' };
         }
 
-        // Extract Internal Marks (Test Performance)
+        // ==========================================
+        // INTERNAL MARKS EXTRACTION - FIX APPLIED
+        // ==========================================
         console.log('[ENT] Extracting internal marks...');
+
+        try {
+            const frames = page.frames();
+            for (const frame of frames) {
+                const link = await frame.$('a:contains("Internal Marks")') ||
+                    await frame.evaluateHandle(() => {
+                        const links = Array.from(document.querySelectorAll('a'));
+                        return links.find(l => l.innerText.toLowerCase().includes('internal marks'));
+                    });
+                if (link && typeof link.click === 'function') {
+                    console.log('[ENT] Clicking explicit Internal Marks tab...');
+                    await link.click();
+                    await new Promise(r => setTimeout(r, 3000));
+                    await page.screenshot({ path: 'ent_post_tab_click.png' });
+                    break;
+                }
+            }
+        } catch (e) { }
+
         let internalMarksData: any = null;
 
-        for (const frame of allFrames) {
+        // Refresh frames list because tab click loaded new frames
+        const markFrames = page.frames();
+
+        for (const frame of markFrames) {
             try {
                 const marksData = await frame.evaluate(() => {
                     const subjects: any[] = [];
@@ -263,9 +311,10 @@ export async function scrapeEntAttendance(username: string, password: string): P
 
                     for (const t of tables) {
                         const fullText = t.innerText.toLowerCase();
-                        // Relaxed check: Look for 'code' and 'category' (standard ENT format)
-                        // Dropping 'test performance' strict check as it might be missing or named differently
-                        if (!fullText.includes('code') || !fullText.includes('category')) continue;
+                        const hasCode = fullText.includes('code');
+                        const hasMarks = fullText.includes('test performance') || fullText.includes('internal marks') || (fullText.includes('test') && fullText.includes('performance'));
+
+                        if (!hasCode && !hasMarks) continue;
 
                         const rows = Array.from((t as HTMLTableElement).rows);
                         if (rows.length < 2) continue;
@@ -273,21 +322,23 @@ export async function scrapeEntAttendance(username: string, password: string): P
                         for (let i = 1; i < rows.length; i++) {
                             const row = rows[i];
                             const cells = row.cells;
-                            if (cells.length < 3) continue;
+                            if (cells.length < 2) continue;
 
                             const code = cells[0].innerText.trim();
+                            if (!code || code.length < 3 || code.toLowerCase().includes('code')) continue;
                             const cleanCode = code.split('\n')[0].replace(/(Regular|Enrichment|Practical|Theory|Online|Lab)/gi, '').trim();
 
-                            let category = 'Theory';
-                            if (cells[1]) {
-                                const typeText = cells[1].innerText.toLowerCase();
-                                if (typeText.includes('practical') || typeText.includes('lab')) category = 'Practical';
+                            let subjectName = 'Unknown Subject';
+                            if (cells[1]) subjectName = cells[1].innerText.trim();
+
+                            let nestedTable = null;
+                            for (let c = 0; c < cells.length; c++) {
+                                const tbl = cells[c].querySelector('table');
+                                if (tbl) {
+                                    nestedTable = tbl;
+                                    break;
+                                }
                             }
-
-                            if (!cleanCode || cleanCode.length < 3) continue;
-
-                            const testCell = cells[2];
-                            const nestedTable = testCell.querySelector('table');
 
                             const components: any[] = [];
                             let totalMarks = 0;
@@ -302,12 +353,15 @@ export async function scrapeEntAttendance(username: string, password: string): P
                                     const valueText = valueRow.cells[j]?.innerText.trim() || '0';
 
                                     const parts = headerText.split('/');
-                                    if (parts.length === 2) {
-                                        const testName = parts[0].trim();
-                                        const maxMark = parseFloat(parts[1]);
 
+                                    if (parts.length >= 2) {
+                                        const maxMarkStr = parts[parts.length - 1].trim();
+                                        const testName = parts.slice(0, parts.length - 1).join('/').trim();
+                                        const maxMark = parseFloat(maxMarkStr);
                                         let scoredMark = 0;
-                                        if (valueText.toLowerCase().includes('abs')) {
+                                        const cleanValue = valueText.toLowerCase();
+
+                                        if (cleanValue.includes('abs') || cleanValue.includes('-')) {
                                             scoredMark = 0;
                                         } else {
                                             scoredMark = parseFloat(valueText);
@@ -327,10 +381,18 @@ export async function scrapeEntAttendance(username: string, password: string): P
                                 }
                             }
 
+                            let category = 'Theory';
+                            if (subjectName.toLowerCase().includes('practical') || subjectName.toLowerCase().includes('lab')) {
+                                category = 'Practical';
+                            }
+                            if (cleanCode.endsWith('P') || cleanCode.endsWith('L')) {
+                                category = 'Practical';
+                            }
+
                             if (components.length > 0) {
                                 subjects.push({
                                     subjectCode: cleanCode,
-                                    subjectName: 'Unknown',
+                                    subjectName: subjectName.split('/')[0] || 'Unknown', // Basic cleanup
                                     category,
                                     totalMarks,
                                     maxTotalMarks,
@@ -351,9 +413,7 @@ export async function scrapeEntAttendance(username: string, password: string): P
                     };
                     break;
                 }
-            } catch (e) {
-                console.log('[ENT] Error parsing internal marks frame:', e);
-            }
+            } catch (e) { }
         }
 
         const processedRecords: AttendanceRecord[] = records.map((r: any) => ({
@@ -362,7 +422,7 @@ export async function scrapeEntAttendance(username: string, password: string): P
             classesToAttend: 0
         }));
 
-        // Merge subject names 
+        // Merge marks names
         if (internalMarksData) {
             internalMarksData.subjects = internalMarksData.subjects.map((sub: any) => {
                 let match = processedRecords.find(r =>
@@ -387,15 +447,15 @@ export async function scrapeEntAttendance(username: string, password: string): P
                 registrationNumber: username,
                 records: processedRecords
             },
-            internalMarks: internalMarksData || undefined
+            internalMarks: internalMarksData,
         };
 
-    } catch (error) {
-        console.error('[ENT] Error:', error);
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : 'Scraping failed'
-        };
+    } catch (error: any) {
+        console.error('[ENT] Scraper Error:', error);
+        if (browser && page) {
+            try { await page.screenshot({ path: 'ent_fatal_error.png' }); } catch (e) { }
+        }
+        return { success: false, error: error.message || 'Scraping failed' };
     } finally {
         if (browser) await browser.close();
     }

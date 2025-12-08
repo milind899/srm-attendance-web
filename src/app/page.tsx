@@ -231,33 +231,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Bottom CTA */}
-        <section className="py-16 sm:py-24 lg:py-32 px-4 sm:px-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 pointer-events-none"></div>
-          <div className="max-w-4xl mx-auto text-center relative z-10">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight px-2">
-              Ready to track smarter?
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-textMuted mb-8 sm:mb-10 max-w-xl mx-auto px-4">
-              Stop worrying about attendance. Start tracking it.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
-                href="/login?dept=FSH"
-                className="bg-[#EEEEF0] text-black px-8 py-4 rounded-full font-semibold hover:bg-white transition-colors"
-              >
-                FSH Portal →
-              </Link>
-              <Link
-                href="/login?dept=ENT"
-                className="bg-transparent text-[#EEEEF0] border border-[#2E2F33] px-8 py-4 rounded-full font-semibold hover:bg-[#1C1D21] transition-colors"
-              >
-                ENT Portal →
-              </Link>
-            </div>
-            <p className="text-sm text-textMuted mt-4">Login with your SRM credentials</p>
-          </div>
-        </section>
+
       </main>
 
       {/* Footer */}
