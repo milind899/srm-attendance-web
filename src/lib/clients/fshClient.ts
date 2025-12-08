@@ -170,7 +170,7 @@ export class FshClient {
             const $t = $(table);
             const txt = $t.text().toLowerCase();
 
-            if (txt.includes('code') && (txt.includes('max') || txt.includes('att') || txt.includes('average') || txt.includes('total') || txt.includes('hour'))) {
+            if (txt.includes('code') && (txt.includes('%') || txt.includes('max') || txt.includes('att') || txt.includes('hour') || txt.includes('total'))) {
                 $t.find('tr').each((i, row) => {
                     const cols = $(row).find('td');
                     if (cols.length < 6) return;
