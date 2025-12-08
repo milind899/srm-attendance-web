@@ -23,7 +23,7 @@ export async function scrapeEntAttendance(username: string, password: string): P
                 args: chromium.args,
                 defaultViewport: { width: 1280, height: 900 },
                 executablePath: await chromium.executablePath(),
-                headless: chromium.headless,
+                headless: true,
             });
         } else {
             console.log('[ENT] Running in Local mode...');
