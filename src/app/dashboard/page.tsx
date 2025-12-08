@@ -509,25 +509,24 @@ export default function Dashboard() {
                                     </div>
 
                                     {/* Desktop: Grid - Merged into responsive grid above, removing backup */}
-                            </div>
-                        ) : (
-                        <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
-                            <p className="text-textMuted mb-6">No marks data. Fetch marks first to use Grade Predictor.</p>
-                            <button onClick={() => setActiveTab('marks')} className="bg-[#EEEEF0] text-black px-6 py-3 rounded-full font-medium hover:bg-white transition-colors">
-                                Go to Marks →
-                            </button>
-                        </div>
+                                ) : (
+                                <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
+                                    <p className="text-textMuted mb-6">No marks data. Fetch marks first to use Grade Predictor.</p>
+                                    <button onClick={() => setActiveTab('marks')} className="bg-[#EEEEF0] text-black px-6 py-3 rounded-full font-medium hover:bg-white transition-colors">
+                                        Go to Marks →
+                                    </button>
+                                </div>
                                 )}
-                    </>
-                )}
-        </div>
-    )
-}
+                            </>
+                        )}
+                    </div>
+                )
+                }
 
             </main >
 
-    {/* Footer / Disclaimer */ }
-    < footer className = "py-8 text-center opacity-60 hover:opacity-100 transition-opacity mb-20 md:mb-0" >
+            {/* Footer / Disclaimer */}
+            < footer className="py-8 text-center opacity-60 hover:opacity-100 transition-opacity mb-20 md:mb-0" >
                 <p className="text-[10px] text-textMuted uppercase tracking-widest font-medium">
                     Disclaimer
                 </p>
