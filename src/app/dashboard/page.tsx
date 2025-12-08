@@ -80,14 +80,19 @@ export default function Dashboard() {
     const attendedHours = data.records.reduce((sum, r) => sum + (r.attendedHours || 0), 0);
     const overallPercentage = totalHours > 0 ? Math.round((attendedHours / totalHours) * 100 * 100) / 100 : 0;
 
+    // Correct formula: (attended + (T - A)) / (total + T) >= 0.75
+    // Solving: A <= (attended - 0.75*total) + 0.25*T
+    // For current buffer (T=0): buffer = attended - 0.75*total
+    const buffer = attendedHours - (0.75 * totalHours);
+    const canMissHours = buffer >= 0 ? Math.floor(buffer) : 0;
+    const needToAttendHours = buffer < 0 ? Math.ceil(Math.abs(buffer) / 0.25) : 0;
     const requiredHours = Math.ceil(0.75 * totalHours);
-    const allowableMissedHours = attendedHours - requiredHours;
-    const canMissHours = allowableMissedHours > 0 ? Math.floor(allowableMissedHours) : 0;
-    const needToAttendHours = allowableMissedHours < 0 ? Math.abs(Math.ceil(allowableMissedHours)) : 0;
 
-    // Predictor calculation
+    // Predictor: If T more classes conducted and you miss A of them
+    // Max missable = floor(buffer + 0.25*T)
+    const predictorMaxMiss = Math.floor(buffer + 0.25 * predictDays);
     const predictedTotal = totalHours + predictDays;
-    const predictedAttended = attendedHours; // Assuming all missed
+    const predictedAttended = attendedHours + predictDays; // Attending all future
     const predictedPercentage = predictedTotal > 0 ? Math.round((predictedAttended / predictedTotal) * 100 * 100) / 100 : 0;
 
     return (
@@ -214,46 +219,47 @@ export default function Dashboard() {
                 <div className={styles.predictorContainer}>
                     <div className={styles.predictorCard}>
                         <h2>🔮 Attendance Predictor</h2>
-                        <p className={styles.predictorDesc}>See how your attendance changes if you miss classes</p>
+                        <p className={styles.predictorDesc}>Calculate how many classes you can safely miss</p>
 
                         <div className={styles.predictorInput}>
-                            <label>If I miss next</label>
+                            <label>Upcoming classes:</label>
                             <input
                                 type="number"
                                 min="0"
-                                max="50"
+                                max="100"
                                 value={predictDays}
                                 onChange={(e) => setPredictDays(Math.max(0, parseInt(e.target.value) || 0))}
                                 className={styles.inputField}
                             />
-                            <span>hours...</span>
+                            <span>hours</span>
                         </div>
 
                         <div className={styles.predictorResult}>
                             <div className={styles.predictorCurrent}>
-                                <span>Current</span>
-                                <span className={styles.bigPct} style={{ color: overallPercentage >= 75 ? '#22c55e' : '#ef4444' }}>
-                                    {overallPercentage}%
+                                <span>Buffer</span>
+                                <span className={styles.bigPct} style={{ color: buffer >= 0 ? '#22c55e' : '#ef4444' }}>
+                                    {Math.floor(buffer)}
                                 </span>
                             </div>
-                            <div className={styles.predictorArrow}>→</div>
+                            <div className={styles.predictorArrow}>+</div>
                             <div className={styles.predictorFuture}>
-                                <span>Predicted</span>
-                                <span className={styles.bigPct} style={{ color: predictedPercentage >= 75 ? '#22c55e' : '#ef4444' }}>
-                                    {predictedPercentage}%
+                                <span>Bonus (0.25×{predictDays})</span>
+                                <span className={styles.bigPct} style={{ color: '#22c55e' }}>
+                                    {Math.floor(0.25 * predictDays)}
                                 </span>
                             </div>
                         </div>
 
-                        {predictDays > 0 && (
-                            <div className={styles.predictorAdvice}>
-                                {predictedPercentage >= 75 ? (
-                                    <p style={{ color: '#22c55e' }}>✅ You'll still be safe!</p>
-                                ) : (
-                                    <p style={{ color: '#ef4444' }}>⚠️ You'll fall below 75%! Avoid missing classes.</p>
-                                )}
-                            </div>
-                        )}
+                        <div className={styles.predictorAdvice} style={{ marginTop: '1rem' }}>
+                            <p style={{ color: predictorMaxMiss >= 0 ? '#22c55e' : '#ef4444', fontSize: '1.1rem' }}>
+                                {predictorMaxMiss >= 0
+                                    ? `✅ Can miss ${predictorMaxMiss} out of next ${predictDays} classes`
+                                    : `⚠️ Need to attend all ${predictDays} classes`}
+                            </p>
+                            <p style={{ color: '#666', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+                                A ≤ {Math.floor(buffer)} + (0.25 × {predictDays}) = {predictorMaxMiss}
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}
