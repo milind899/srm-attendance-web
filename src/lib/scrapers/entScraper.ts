@@ -1,6 +1,10 @@
 import puppeteer, { Frame, Page } from 'puppeteer';
 import { ScraperResult, AttendanceRecord } from '../types';
 
+// Dynamic imports for serverless usage
+// const chromium = require('@sparticuz/chromium'); 
+// const puppeteerCore = require('puppeteer-core');
+
 const LOGIN_URL = 'https://academia.srmist.edu.in/';
 
 export async function scrapeEntAttendance(username: string, password: string): Promise<ScraperResult> {
@@ -8,10 +12,26 @@ export async function scrapeEntAttendance(username: string, password: string): P
     let page: Page | null = null;
     try {
         console.log('[ENT] Starting scraper...');
-        browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
-        });
+
+        // Detect Vercel/AWS environment
+        if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_VERSION) {
+            console.log('[ENT] Running in Serverless mode (Vercel)...');
+            const chromium = await import('@sparticuz/chromium').then(m => m.default);
+            const puppeteerCore = await import('puppeteer-core').then(m => m.default);
+
+            browser = await puppeteerCore.launch({
+                args: chromium.args,
+                defaultViewport: chromium.defaultViewport,
+                executablePath: await chromium.executablePath(),
+                headless: chromium.headless,
+            });
+        } else {
+            console.log('[ENT] Running in Local mode...');
+            browser = await puppeteer.launch({
+                headless: true,
+                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+            });
+        }
         page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 900 });
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
