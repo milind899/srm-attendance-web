@@ -302,7 +302,8 @@ export async function loginAndScrapeFSH(
         log('Extracting internal marks...');
         let internalMarksData: any = null;
 
-        for (const frame of allPages.flatMap(p => p.frames())) {
+        const currentPages = browser ? await browser.pages() : [];
+        for (const frame of currentPages.flatMap(p => p.frames())) {
             try {
                 const marksData = await frame.evaluate(() => {
                     const subjects: any[] = [];
