@@ -16,6 +16,7 @@ export default function Dashboard() {
     const [marksLoading, setMarksLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<Tab>('attendance');
     const [predictDays, setPredictDays] = useState(0);
+    const [showProfile, setShowProfile] = useState(false);
 
     useEffect(() => {
         const stored = localStorage.getItem('attendanceData');
@@ -137,7 +138,7 @@ export default function Dashboard() {
                     )}
                 </nav>
 
-                <div className={styles.userSection}>
+                <div className={styles.userSection} onClick={() => setShowProfile(true)} style={{ cursor: 'pointer' }}>
                     <div className={styles.userAvatar}>
                         {data.studentName?.charAt(0) || 'U'}
                     </div>
@@ -145,11 +146,55 @@ export default function Dashboard() {
                         <span className={styles.userName}>{data.studentName}</span>
                         <span className={styles.userReg}>{data.registrationNumber}</span>
                     </div>
-                    <button onClick={() => { localStorage.clear(); router.push('/'); }} className={styles.logoutIcon} title="Logout">
-                        ⎋
-                    </button>
                 </div>
             </aside>
+
+            {/* Profile Modal */}
+            {showProfile && (
+                <div className={styles.modalOverlay} onClick={() => setShowProfile(false)}>
+                    <div className={styles.profileModal} onClick={(e) => e.stopPropagation()}>
+                        <button className={styles.modalClose} onClick={() => setShowProfile(false)}>✕</button>
+
+                        <h2 className={styles.profileName}>{data.studentName}</h2>
+                        <p className={styles.profileReg}>{data.registrationNumber}</p>
+
+                        <div className={styles.profileGrid}>
+                            <div className={styles.profileItem}>
+                                <span className={styles.profileLabel}>Year:</span>
+                                <span className={styles.profileValue}>3</span>
+                            </div>
+                            <div className={styles.profileItem}>
+                                <span className={styles.profileLabel}>Semester:</span>
+                                <span className={styles.profileValue}>5</span>
+                            </div>
+                            <div className={styles.profileItem}>
+                                <span className={styles.profileLabel}>Section:</span>
+                                <span className={styles.profileValue}>A1</span>
+                            </div>
+                            <div className={styles.profileItem}>
+                                <span className={styles.profileLabel}>Batch:</span>
+                                <span className={styles.profileValue}>1</span>
+                            </div>
+                        </div>
+
+                        <div className={styles.profileSection}>
+                            <span className={styles.profileLabel}>Program:</span>
+                            <span className={styles.profileValue}>B.Tech</span>
+                        </div>
+                        <div className={styles.profileSection}>
+                            <span className={styles.profileLabel}>Department:</span>
+                            <span className={styles.profileValue}>{department === 'FSH' ? 'Computer Science and Engineering (CS)' : 'Engineering & Technology'}</span>
+                        </div>
+
+                        <button
+                            className={styles.logoutBtn}
+                            onClick={() => { localStorage.clear(); router.push('/'); }}
+                        >
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Main Content */}
             <main className={styles.main}>
