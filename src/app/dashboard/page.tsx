@@ -512,15 +512,13 @@ export default function Dashboard() {
                                             })}
                                         </div>
                                     </div>
-
-                                    {/* Desktop: Grid - Merged into responsive grid above, removing backup */}
                                 ) : (
-                                <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
-                                    <p className="text-textMuted mb-6">No marks data. Fetch marks first to use Grade Predictor.</p>
-                                    <button onClick={() => setActiveTab('marks')} className="bg-[#EEEEF0] text-black px-6 py-3 rounded-full font-medium hover:bg-white transition-colors">
-                                        Go to Marks →
-                                    </button>
-                                </div>
+                                    <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
+                                        <p className="text-textMuted mb-6">No marks data. Fetch marks first to use Grade Predictor.</p>
+                                        <button onClick={() => setActiveTab('marks')} className="bg-[#EEEEF0] text-black px-6 py-3 rounded-full font-medium hover:bg-white transition-colors">
+                                            Go to Marks →
+                                        </button>
+                                    </div>
                                 )}
                             </>
                         )}
