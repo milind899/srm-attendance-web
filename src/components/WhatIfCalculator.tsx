@@ -8,11 +8,11 @@ interface WhatIfCalculatorProps {
 }
 
 export const WhatIfCalculator: React.FC<WhatIfCalculatorProps> = ({ records }) => {
-    const [selectedSubject, setSelectedSubject] = useState<string>(records[0]?.subject || '');
+    const [selectedSubject, setSelectedSubject] = useState<string>(records[0]?.subjectName || '');
     const [scenario, setScenario] = useState<'attend' | 'miss'>('attend');
     const [classCount, setClassCount] = useState<number>(1);
 
-    const selectedRecord = records.find(r => r.subject === selectedSubject);
+    const selectedRecord = records.find(r => r.subjectName === selectedSubject);
 
     const simulation = useMemo(() => {
         if (!selectedRecord) return null;
@@ -87,8 +87,8 @@ export const WhatIfCalculator: React.FC<WhatIfCalculatorProps> = ({ records }) =
                     className="w-full bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-white outline-none focus:border-primary/50"
                 >
                     {records.map((r) => (
-                        <option key={r.subject} value={r.subject}>
-                            {r.subject} ({r.percentage}%)
+                        <option key={r.subjectName} value={r.subjectName}>
+                            {r.subjectName} ({r.percentage}%)
                         </option>
                     ))}
                 </select>
@@ -139,8 +139,8 @@ export const WhatIfCalculator: React.FC<WhatIfCalculatorProps> = ({ records }) =
                     <button
                         onClick={() => setScenario('attend')}
                         className={`flex-1 py-3 rounded-lg font-medium transition-all ${scenario === 'attend'
-                                ? 'bg-green-500 text-white'
-                                : 'bg-surfaceHighlight text-textMuted hover:text-white'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-surfaceHighlight text-textMuted hover:text-white'
                             }`}
                     >
                         I Attend
@@ -148,8 +148,8 @@ export const WhatIfCalculator: React.FC<WhatIfCalculatorProps> = ({ records }) =
                     <button
                         onClick={() => setScenario('miss')}
                         className={`flex-1 py-3 rounded-lg font-medium transition-all ${scenario === 'miss'
-                                ? 'bg-red-500 text-white'
-                                : 'bg-surfaceHighlight text-textMuted hover:text-white'
+                            ? 'bg-red-500 text-white'
+                            : 'bg-surfaceHighlight text-textMuted hover:text-white'
                             }`}
                     >
                         I Miss
