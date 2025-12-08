@@ -185,7 +185,12 @@ export default function Dashboard() {
     const overallNeedToAttend = Math.ceil((0.75 * totalHours - attendedHours) / 0.25);
 
     // Subjects with actual marks (not estimated)
-    const subjectsWithMarks = (internalMarks?.subjects || []).filter(s => (s.components && s.components.length > 0) || s.totalMarks > 0);
+    const allSubjects = internalMarks?.subjects || [];
+    const subjectsWithMarks = allSubjects.filter(s => {
+        const hasComponents = s.components && s.components.length > 0;
+        const hasTotal = s.totalMarks > 0;
+        return hasComponents || hasTotal;
+    });
 
     return (
         <div className="min-h-screen bg-background text-textMain selection:bg-primary/30 selection:text-white font-sans animate-scale-in origin-center">
