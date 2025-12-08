@@ -17,7 +17,7 @@ export const WhatIfCalculator: React.FC<WhatIfCalculatorProps> = ({ records }) =
     const simulation = useMemo(() => {
         if (!selectedRecord) return null;
 
-        const { attended, total, percentage } = selectedRecord;
+        const { attendedHours: attended, totalHours: total, percentage } = selectedRecord;
 
         if (scenario === 'attend') {
             // Simulate attending more classes
@@ -46,7 +46,7 @@ export const WhatIfCalculator: React.FC<WhatIfCalculatorProps> = ({ records }) =
     // Calculate classes needed to reach 75%
     const classesToReach75 = useMemo(() => {
         if (!selectedRecord) return null;
-        const { attended, total, percentage } = selectedRecord;
+        const { attendedHours: attended, totalHours: total, percentage } = selectedRecord;
 
         if (percentage >= 75) {
             // Already above 75%, calculate how many can be missed
@@ -106,11 +106,11 @@ export const WhatIfCalculator: React.FC<WhatIfCalculatorProps> = ({ records }) =
                     <div className="flex gap-8 text-sm">
                         <div>
                             <span className="text-textMuted">Attended: </span>
-                            <span className="text-white font-medium">{selectedRecord.attended}</span>
+                            <span className="text-white font-medium">{selectedRecord.attendedHours}</span>
                         </div>
                         <div>
                             <span className="text-textMuted">Total: </span>
-                            <span className="text-white font-medium">{selectedRecord.total}</span>
+                            <span className="text-white font-medium">{selectedRecord.totalHours}</span>
                         </div>
                     </div>
 
