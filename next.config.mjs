@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // swcMinify: true, // Optional, default in 14
+    experimental: {
+        serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium'],
+    },
 };
 
 export default nextConfig;
