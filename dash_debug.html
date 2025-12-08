@@ -1,0 +1,14 @@
+<html>
+<head><title>Please wait login screen is loading...</title></head>
+<script>
+     function callme(){
+          document.getElementById('.theGR8LoginLoader').action="../../students/loginManager/youLogin.jsp";
+          window.target = "_TOP";
+          document.getElementById('.theGR8LoginLoader').submit();
+     }
+</script>
+<body onload='callme()'>
+<form id='.theGR8LoginLoader' name='.theGR8LoginLoader' method="post" >
+</form>
+</body>
+</html>

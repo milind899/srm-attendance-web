@@ -1,0 +1,134 @@
+.main {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.blob {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: 0;
+}
+
+.blobPurple {
+  top: -10%;
+  left: -10%;
+  background: rgba(192, 38, 211, 0.2);
+}
+
+.blobBlue {
+  bottom: -10%;
+  right: -10%;
+  background: rgba(37, 99, 235, 0.2);
+}
+
+.hero {
+  z-index: 10;
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  letter-spacing: -0.05em;
+}
+
+.subtitle {
+  color: #a1a1aa;
+  font-size: 1.125rem;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.grid {
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  width: 100%;
+  max-width: 56rem;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Card Component Styles */
+.cardLink {
+  display: block;
+  position: relative;
+  text-decoration: none;
+  group-hover: none;
+  /* Just for reference */
+}
+
+.cardGlow {
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  opacity: 0;
+  filter: blur(24px);
+  transition: opacity 0.5s ease;
+  z-index: 0;
+}
+
+.entGlow {
+  background: linear-gradient(to right, #ec4899, #f43f5e);
+}
+
+.fshGlow {
+  background: linear-gradient(to right, #06b6d4, #3b82f6);
+}
+
+.cardLink:hover .cardGlow {
+  opacity: 0.2;
+}
+
+.cardContent {
+  position: relative;
+  height: 100%;
+  padding: 2rem;
+  transition: transform 0.3s ease;
+  z-index: 1;
+}
+
+.cardLink:hover .cardContent {
+  transform: translateY(-0.5rem);
+}
+
+.cardTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: white;
+}
+
+.cardDesc {
+  color: #a1a1aa;
+}
+
+.cardAction {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 0.2s;
+}
+
+.cardLink:hover .cardAction {
+  color: white;
+}

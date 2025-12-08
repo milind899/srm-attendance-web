@@ -1,0 +1,245 @@
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>SRM Student Portal</title>
+        <link href="../../resources/css/vendor/all.css" rel="stylesheet" type="text/css">
+        <link href="../../resources/css/vendor/mainstyle.css" rel="stylesheet">
+        <script src="../../resources/js/jquery-3.2.1.min.js"></script>
+        <script src="../../resources/js/jquery-ui.min.js"></script>
+        <link href="../../resources/css/jquery-ui.css" rel="stylesheet">
+        <script language="javascript" src="../../resources/js/jquery.js" type="text/javascript"></script>    
+        <script type="text/javascript" src="../../resources/js/jquery-ui.js"></script>  
+        <link href='../../resources/Image/college_icon.png' type='Image/x-icon' rel='icon'></link>
+        <script>
+            var d = new Date();
+            var n = d.getFullYear();
+
+            $(document).ready(function () {
+                $(window).keydown(function (event) {
+                    if (event.keyCode == 13) {
+                        event.preventDefault();
+                        return false;
+                    }
+                });
+            });
+
+            $(function () {
+                $('#login').val("");
+                $('#passwd').val("");
+                window.history.pushState(null, "", window.location.href);
+                window.onpopstate = function () {
+                    window.history.pushState(null, "", window.location.href);
+                };
+
+                $(".clsalphanumeric").keypress(function (event) {
+                    var regex = new RegExp("^[a-zA-Z0-9]+$");
+                    var key = String.fromCharCode(!event.charCode ? event.which : event.charCode);
+                    if (!regex.test(key)) {
+                        event.preventDefault();
+                        return false;
+                    }
+                });
+            });
+
+            function funLogin() {
+                var forms = document.getElementsByClassName('needs-validation');
+                var validation = Array.prototype.filter.call
+                        (forms, function (form)
+                        {
+                            $("#login").attr("required", true);
+                            $("#passwd").attr("required", true);
+                            if (form.checkValidity() === false) {
+                                event.preventDefault();
+                                event.stopPropagation();
+                            } else {
+                                $("#divLoginErr").html("");
+                                $("#divprogressbarlogin").show();
+                                funSubmit();
+                            }
+                            form.classList.add('was-validated');
+                        });
+            }
+
+            function funSubmit() {
+                document.getElementById('txtAN').value = document.getElementById('login').value;
+                document.getElementById('txtSK').value = document.getElementById('passwd').value;
+                document.getElementById('hdnCaptcha').value = document.getElementById('ccode').value;
+                document.getElementById('csrfPreventionSalt').value = document.getElementById('hdnCSRF').value;
+                document.getElementById('txtPageAction').value = '1';
+                document.getElementById('divProcess').style.display = 'block';
+                document.getElementById('login').value = 'iamalsouser';
+                document.getElementById('passwd').value = 'password';
+                $('#login_form')[0].reset();
+                $("#login").removeAttr("required");
+                $("#ccode").removeAttr("required");
+                $("#passwd").removeAttr("required");
+                $("#login_form").attr("action", "../../students/loginManager/youLogin.jsp");
+                $("#login_form").submit();
+            }
+
+            function funChangeCaptchas() {
+                document.getElementById('txtAN').value = document.getElementById('login').value;
+                document.getElementById('txtSK').value = document.getElementById('passwd').value;
+                document.getElementById('txtPageAction').value = '0';
+                $("#login_form").attr("action", "../../students/loginManager/youLogin.jsp");
+                $("#login_form").submit();
+            }
+        </script>
+    </head>
+    <body>
+        <div class="container"> 
+            <!-- Outer Row -->
+            <div class="row justify-content-center">
+                <div class="col-xl-12 col-lg-12 col-md-12">
+                    <div class="card o-hidden shadow-lg my-1 border-0 ">
+                        <div class="row mb-1">
+                            <div class="col-md-3">                                
+                            </div>
+                            <div class="col-md-6 text-center">
+                                <img class="mt-1" src="../../resources/Image/srmist.jpg" width="275px;" height="90px;"   alt="SRM IST"/>
+                            </div>   
+                            <div class="col-md-3">                                
+                            </div>
+                        </div> 
+                        <div class="card-body p-0">
+                            <!-- Nested Row within Card Body -->
+
+                            <div class="row mt-3 ml-1 mr-1">
+                                <div class="col-md-7">                                     
+                                    <p style="font-weight: bold;font-size: 13pt;">Dear Student,</p>
+                                    <p>Welcome to SRMIST STUDENT PORTAL.</p>
+                                    <p>You can access student portal to know your academic and financial details etc.</p>
+                                    <p>SRMIST students can login with NetID credentials. (i.e If your mail id is abcd@srmist.edu.in,your netid is abcd & password will be e-mail password) </p>
+                                    <!--<p>For <strong>PARENT PORTAL</strong> <a href="../../students/loginManager/parentLogin.jsp" target="_blank">click here</a></p>-->
+                                    <!--                                    <div class="alert alert-danger alert-icon" role="alert">
+                                                                            <div class="alert-icon-aside">
+                                                                                <i class="fa fa-1x fa-info-circle"></i>
+                                                                            </div>
+                                                                            <div class="alert-icon-content">
+                                                                              <h6 class="alert-heading">Important</h6>
+                                                                                <strong> Critical Server Maintenance Activity from May 15th, 2024 09.00 PM to May 15th, 2024 11.00 PM.
+                                                                                We request you to plan your activities accordingly.</strong> 
+                                                                            </div>
+                                                                        </div>-->
+                                </div>
+                                <div class="col-lg-5">
+                                    <div class="card card-progress" id="divLogin">
+                                        <div class="card-header badge-custom text-center text-white">Student Portal</div>
+                                        <div class="card-body">
+                                            <div class="p-2">
+                                                <form  method="post" autocomplete="off" id="login_form" class="needs-validation" novalidate>
+                                                    <div class="form-group mb-4">
+                                                        <label>NetID (without '@srmist.edu.in')</label>
+                                                        <div class="input-group has-validation">
+                                                            <span class="input-group-text text-custom" id="inputGroupPrepend"><i class="fa fa-user "></i></span>
+                                                            <input type="text" class="form-control clsalphanumeric" name="login" id="login" placeholder="NetID" required maxlength="6">
+                                                            <div class="invalid-feedback" id='divUserId'>
+                                                                Enter an User Id
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group mb-4">
+                                                        <label>Password</label>
+                                                        <div class="input-group has-validation">
+                                                            <span class="input-group-text text-custom" id="inputGroupPrepend"><i class="fa fa-key "></i></span>
+                                                            <input type="password" class="form-control" name="passwd" id="passwd" placeholder="Password"  required>                                                            
+                                                            <div class="invalid-feedback">
+                                                                Enter valid password
+                                                            </div>                                                            
+                                                        </div>
+                                                        <div style="text-align: right;">
+                                                            <a href="https://ssp.srmist.edu.in/resetpassword/" title="Click to Reset Password" target="_blank">Forgot Password?</a>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label>Captcha</label>
+                                                    </div>
+                                                    <div class="form-group row">                                                        
+                                                        <div class="col-sm-6 input-group has-validation">
+                                                            <span class="input-group-text text-custom" id="inputGroupPrepend"><i class="fa fa-recycle"></i></span>                                                                                                                
+                                                            <input type="text" class="form-control" name="ccode" id="ccode" placeholder="Captcha"  required>
+                                                            <div class="invalid-feedback">
+                                                                Enter valid Captcha
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-4"  class="input-group has-validation"> 
+                                                            <img src="/srmiststudentportal/captchas">
+                                                        </div>
+                                                        <div class="col-sm-2"  class="input-group has-validation"> 
+                                                            <button tabindex="-1" class="btn btn-icon btn-transparent-dark order-1 order-lg-0 mr-lg-2" id="btnRefresh" onclick="funChangeCaptchas()"><i class="fa fa-recycle"></i></button>
+                                                        </div>
+                                                    </div> 
+                                                    <button type="button" class="btn btn-custom btn-user btn-block lift" onclick="funLogin()">
+                                                        <i class="fa fa-lock fa-fw mr-1"></i> Login
+                                                    </button>
+
+                                                    <input type="hidden" id="txtPageAction" name="txtPageAction" value="0">
+                                                    <div id='divProcess' name='divProcess' style='display:none;'>
+                                                        Please Wait...<img src="../../resources/Image/wait.gif">
+                                                    </div>
+                                                    <div>
+                                                        
+                                                    </div>
+
+                                                    <input type="hidden" id="txtSK" name="txtSK">
+                                                    <input type="hidden" id="txtAN" name="txtAN">
+                                                    <input type="hidden" id="hdnCaptcha" name="hdnCaptcha">
+                                                    <input type="hidden" id="csrfPreventionSalt" name="csrfPreventionSalt">
+                                                    <input type=hidden value=1 name="_tries">
+                                                    <input type=hidden name="_md5">
+                                                    <input type="hidden" name="hdnCSRF" id="hdnCSRF" value="DGPVKAXpPvkpULkIcaZ4"/>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        <div class="progress rounded-0" style="display:none" id="divprogressbarlogin">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-custom" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>                                    
+                                    </form>
+                                </div>
+                            </div>                           
+                        </div>
+
+                    </div>
+                </div>
+            </div>  
+            <div class="modal fade" id="modalForgetPasswordConfirm" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+                 aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">User Credentials Confirm!</h5>
+                            <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                <span class="text-white" aria-hidden="true">�</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="modalbodyForgetPassword">
+                            Wish to  get your user credentials?
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-dark lift" type="button" data-dismiss="modal">Close</button>
+                            <button class="btn btn-custom lift" type="button" id="btnConfirm" onclick="funConfirmForget()">Confirm</button>
+                        </div>
+                    </div>
+                </div>            
+            </div>
+            
+
+            <!--        <script src="../../resources/js/vendor/jquery.min.js"></script>-->
+            <script src="../../resources/js/vendor/bootstrap.bundle.min.js"></script>
+            <script src="../../resources/js/vendor/jquery.easing.min.js"></script>
+            <script src="../../resources/js/vendor/main.js"></script>
+    </body>
+</html>
