@@ -74,8 +74,12 @@ function LoginForm() {
 
             if (res.ok) {
                 // Success! Save data and redirect
-                localStorage.setItem('attendanceData', JSON.stringify(data.data)); // Simple persistence
+                localStorage.setItem('attendanceData', JSON.stringify(data.data));
                 localStorage.setItem('department', dept);
+                // Save cookies for internal marks fetch
+                if (dept === 'FSH' && cookies) {
+                    localStorage.setItem('fshCookies', cookies);
+                }
                 router.push('/dashboard');
             } else {
                 setError(data.error || 'Login failed');
