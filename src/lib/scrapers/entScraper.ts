@@ -60,13 +60,11 @@ export async function scrapeEntAttendance(username: string, password: string): P
             await safeClick(nextBtn);
         }
 
-        // Wait for password field (optimized)
-        // Replaced 2s wait with smart polling loop below
-
-        // Find password field
+        // Wait for password field (optimized with polling)
         let passwordField = null;
-        for (let attempt = 0; attempt < 8; attempt++) { // Increased attempts slightly since we start sooner
+        for (let attempt = 0; attempt < 10; attempt++) {
             try {
+                // Check all iframes
                 const iframes = await page.$$('#signinFrame');
                 for (const iframe of iframes) {
                     const frame = await iframe.contentFrame();
@@ -88,21 +86,23 @@ export async function scrapeEntAttendance(username: string, password: string): P
                 }
             } catch (e) { }
 
+            if (passwordField) break;
+
+            // Check current frame
             if (!passwordField) {
                 try {
                     const pwd = await loginFrame.$('#password');
-                    if (pwd) {
-                        const isVisible = await loginFrame.evaluate((el) => {
-                            const style = window.getComputedStyle(el);
-                            return style && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
-                        }, pwd);
-                        if (isVisible) passwordField = pwd;
+                    if (pwd && await loginFrame.evaluate((el) => {
+                        const style = window.getComputedStyle(el);
+                        return style && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+                    }, pwd)) {
+                        passwordField = pwd;
+                        break;
                     }
                 } catch (e) { }
             }
 
-            if (passwordField) break;
-            await new Promise(r => setTimeout(r, 250)); // Fast polling
+            await new Promise(r => setTimeout(r, 500));
         }
 
         if (!passwordField) {
@@ -110,7 +110,7 @@ export async function scrapeEntAttendance(username: string, password: string): P
         }
 
         console.log('[ENT] Entering password...');
-        await new Promise(r => setTimeout(r, 500)); // Wait for animation
+        await new Promise(r => setTimeout(r, 500));
         await safeClick(passwordField);
         await passwordField.type(password);
 
@@ -119,15 +119,16 @@ export async function scrapeEntAttendance(username: string, password: string): P
         if (signinBtn) {
             await new Promise(r => setTimeout(r, 500));
             await safeClick(signinBtn);
+        } else {
+            await passwordField.press('Enter');
         }
-        else await passwordField.press('Enter');
 
         // Wait for login
         try {
             await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 });
         } catch (e) { }
 
-        // Check login
+        // Check login success
         const content = await page.content();
         if (content.includes('Invalid Login') || content.includes('Incorrect Password')) {
             throw new Error('Invalid credentials');
@@ -138,20 +139,15 @@ export async function scrapeEntAttendance(username: string, password: string): P
         console.log('[ENT] Going to attendance page...');
         await page.goto(LOGIN_URL + '#Page:My_Attendance', { waitUntil: 'domcontentloaded', timeout: 20000 });
 
-        // Helper to check for tables in any frame
+        // Helper to check for tables
         const waitForTable = async () => {
-            const getMaxTables = async () => {
-                let count = 0;
-                for (const frame of page.frames()) {
-                    const c = await frame.evaluate(() => document.querySelectorAll('table').length);
-                    count += c;
-                }
-                return count;
-            };
-
             const start = Date.now();
             while (Date.now() - start < 15000) {
-                if (await getMaxTables() > 0) return true;
+                let tableCount = 0;
+                for (const frame of page.frames()) {
+                    tableCount += await frame.evaluate(() => document.querySelectorAll('table').length);
+                }
+                if (tableCount > 0) return true;
                 await new Promise(r => setTimeout(r, 500));
             }
             return false;
@@ -172,59 +168,52 @@ export async function scrapeEntAttendance(username: string, password: string): P
                     const tables = document.querySelectorAll('table');
 
                     for (const t of tables) {
-                        // Relaxed table detection: just look for key columns
                         const fullText = t.innerText.toLowerCase();
-                        if ((!fullText.includes('code') && !fullText.includes('title')) || !fullText.includes('attn')) continue;
+                        // Relaxed check: Just look for 'code' and some attendance indicator
+                        if (!fullText.includes('code') || (!fullText.includes('attn') && !fullText.includes('max') && !fullText.includes('hours'))) continue;
 
                         const rows = Array.from((t as HTMLTableElement).rows);
                         if (rows.length < 2) continue;
 
-                        // Find header index - scan first 10 rows
                         let headerIdx = -1;
                         for (let i = 0; i < Math.min(10, rows.length); i++) {
                             const rowText = rows[i].innerText.toLowerCase();
-                            if ((rowText.includes('course') && rowText.includes('code')) ||
-                                (rowText.includes('attn') && rowText.includes('%'))) {
+                            // Headers usually contain "Course Code" and "Attn" or "Max Hours"
+                            if (rowText.includes('code') && (rowText.includes('attn') || rowText.includes('max') || rowText.includes('hours'))) {
                                 headerIdx = i;
                                 break;
                             }
                         }
-
                         if (headerIdx === -1) continue;
 
-                        // Parse rows
                         for (let i = headerIdx + 1; i < rows.length; i++) {
                             const row = rows[i];
                             const cells = row.cells;
-                            if (cells.length < 2) continue;
+                            if (cells.length < 5) continue;
 
                             const texts = Array.from(cells).map(c => c.innerText.trim());
+                            let code = texts[0].split('\n')[0].replace(/(Regular|Enrichment|Practical|Theory|Online|Lab)/gi, '').trim();
 
-                            // Strategy: Code is usually first, Percentage is usually last numeric
-                            let code = texts[0].split('\n')[0].trim();
+                            // Basic validation
+                            if (!code || code.length < 3 || code.toLowerCase().includes('total')) continue;
 
-                            // Remove "Regular", "Theory" etc from code
-                            code = code.replace(/Regular|Enrichment|Practical|Theory|Online|Lab/gi, '').trim();
-
-                            if (!code || code.length < 3) continue;
-
-                            // Title is usually second column
                             let title = texts[1];
-
-                            // Category is usually third column (index 2) - checking for Theory/Practical
                             let category = 'Theory';
+
+                            // Try to deduce category from text if column 2 exists
                             if (texts[2]) {
                                 const catText = texts[2].toLowerCase();
                                 if (catText.includes('practical') || catText.includes('lab')) category = 'Practical';
-                                else if (catText.includes('theory')) category = 'Theory';
                             } else {
-                                // Fallback: guess from title or code
+                                // Or from title/code
                                 if (title.toLowerCase().includes('lab') || title.toLowerCase().includes('practical')) category = 'Practical';
                             }
 
-                            // Find percentage from the right side
+                            // Percentage is usually the last column or one of the last
                             let pct = -1;
-                            for (let j = texts.length - 1; j >= 2; j--) {
+
+                            // Scan from the end for a valid percentage
+                            for (let j = texts.length - 1; j >= 3; j--) {
                                 const valStr = texts[j].replace('%', '').trim();
                                 if (/^\d+(\.\d+)?$/.test(valStr)) {
                                     const val = parseFloat(valStr);
@@ -255,9 +244,7 @@ export async function scrapeEntAttendance(username: string, password: string): P
                     console.log(`[ENT] Found ${records.length} records in frame: ${frame.name() || frame.url()}`);
                     break;
                 }
-            } catch (e) {
-                // debugInfo.push(`Frame error: ${e instanceof Error ? e.message : String(e)}`);
-            }
+            } catch (e) { }
         }
 
         if (records.length === 0) {
@@ -276,24 +263,21 @@ export async function scrapeEntAttendance(username: string, password: string): P
 
                     for (const t of tables) {
                         const fullText = t.innerText.toLowerCase();
-                        if (!fullText.includes('test performance') || !fullText.includes('course code')) continue;
+                        // Relaxed check: Look for 'code' and 'category' (standard ENT format)
+                        // Dropping 'test performance' strict check as it might be missing or named differently
+                        if (!fullText.includes('code') || !fullText.includes('category')) continue;
 
                         const rows = Array.from((t as HTMLTableElement).rows);
                         if (rows.length < 2) continue;
 
-                        // Start from row 1 (skip header)
                         for (let i = 1; i < rows.length; i++) {
                             const row = rows[i];
                             const cells = row.cells;
                             if (cells.length < 3) continue;
 
                             const code = cells[0].innerText.trim();
-                            // Clean up code similar to attendance scraper
-                            const cleanCode = code.split('\n')[0]
-                                .replace(/(Regular|Enrichment|Practical|Theory|Online|Lab)/gi, '')
-                                .trim();
+                            const cleanCode = code.split('\n')[0].replace(/(Regular|Enrichment|Practical|Theory|Online|Lab)/gi, '').trim();
 
-                            // Get Category from 2nd cell (index 1) - "Theory" or "Practical"
                             let category = 'Theory';
                             if (cells[1]) {
                                 const typeText = cells[1].innerText.toLowerCase();
@@ -302,7 +286,6 @@ export async function scrapeEntAttendance(username: string, password: string): P
 
                             if (!cleanCode || cleanCode.length < 3) continue;
 
-                            // The 3rd cell (index 2) usually contains the nested table with marks
                             const testCell = cells[2];
                             const nestedTable = testCell.querySelector('table');
 
@@ -311,11 +294,10 @@ export async function scrapeEntAttendance(username: string, password: string): P
                             let maxTotalMarks = 0;
 
                             if (nestedTable && nestedTable.rows.length >= 2) {
-                                const headerRow = nestedTable.rows[0]; // Test Name / Max
-                                const valueRow = nestedTable.rows[1];  // Scored Mark
+                                const headerRow = nestedTable.rows[0];
+                                const valueRow = nestedTable.rows[1];
 
                                 for (let j = 0; j < headerRow.cells.length; j++) {
-                                    // Header format: "FT-III/15.00"
                                     const headerText = headerRow.cells[j].innerText.trim();
                                     const valueText = valueRow.cells[j]?.innerText.trim() || '0';
 
@@ -336,7 +318,7 @@ export async function scrapeEntAttendance(username: string, password: string): P
                                                 component: testName,
                                                 marks: scoredMark,
                                                 maxMarks: maxMark,
-                                                date: new Date().toISOString() // Placeholder date
+                                                date: new Date().toISOString()
                                             });
                                             totalMarks += scoredMark;
                                             maxTotalMarks += maxMark;
@@ -348,8 +330,8 @@ export async function scrapeEntAttendance(username: string, password: string): P
                             if (components.length > 0) {
                                 subjects.push({
                                     subjectCode: cleanCode,
-                                    subjectName: 'Unknown', // Will merge with attendance data later
-                                    category, // Add category for matching
+                                    subjectName: 'Unknown',
+                                    category,
                                     totalMarks,
                                     maxTotalMarks,
                                     components
@@ -380,30 +362,21 @@ export async function scrapeEntAttendance(username: string, password: string): P
             classesToAttend: 0
         }));
 
-        // Merge subject names from attendance into internal marks if available
+        // Merge subject names 
         if (internalMarksData) {
             internalMarksData.subjects = internalMarksData.subjects.map((sub: any) => {
-                // Try matching by Code AND Category first
                 let match = processedRecords.find(r =>
                     r.subjectCode === sub.subjectCode &&
                     r.category === sub.category
                 );
-
-                // Fallback to just Code if strict match fails (though less accurate)
                 if (!match) {
                     match = processedRecords.find(r => r.subjectCode === sub.subjectCode);
                 }
-
-                // Append category to name if it's Practical to avoid confusion
                 let name = match ? match.subjectName : sub.subjectName || sub.subjectCode;
                 if (sub.category === 'Practical' && !name.toLowerCase().includes('practical') && !name.toLowerCase().includes('lab')) {
                     name += ' (Practical)';
                 }
-
-                return {
-                    ...sub,
-                    subjectName: name
-                };
+                return { ...sub, subjectName: name };
             });
         }
 
