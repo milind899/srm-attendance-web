@@ -150,6 +150,7 @@ export async function scrapeEntAttendance(username: string, password: string): P
             const start = Date.now();
             while (Date.now() - start < 15000) {
                 let tableCount = 0;
+                if (!page) return false;
                 for (const frame of page.frames()) {
                     tableCount += await frame.evaluate(() => document.querySelectorAll('table').length);
                 }
@@ -173,13 +174,16 @@ export async function scrapeEntAttendance(username: string, password: string): P
                         return links.find(l => l.innerText.includes('Attendance') || l.href.includes('My_Attendance'));
                     });
 
-                if (link && typeof link.click === 'function') {
-                    console.log('[ENT] Clicking attendance link in frame:', frame.name());
-                    try {
-                        await link.click();
-                        clicked = true;
-                        break;
-                    } catch (e) { }
+                if (link) {
+                    const handle = link as any;
+                    if (typeof handle.click === 'function') {
+                        console.log('[ENT] Clicking attendance link in frame:', frame.name());
+                        try {
+                            await handle.click();
+                            clicked = true;
+                            break;
+                        } catch (e) { }
+                    }
                 }
             }
 
@@ -288,12 +292,15 @@ export async function scrapeEntAttendance(username: string, password: string): P
                         const links = Array.from(document.querySelectorAll('a'));
                         return links.find(l => l.innerText.toLowerCase().includes('internal marks'));
                     });
-                if (link && typeof link.click === 'function') {
-                    console.log('[ENT] Clicking explicit Internal Marks tab...');
-                    await link.click();
-                    await new Promise(r => setTimeout(r, 3000));
-                    await page.screenshot({ path: 'ent_post_tab_click.png' });
-                    break;
+                if (link) {
+                    const handle = link as any;
+                    if (typeof handle.click === 'function') {
+                        console.log('[ENT] Clicking explicit Internal Marks tab...');
+                        await handle.click();
+                        await new Promise(r => setTimeout(r, 3000));
+                        await page.screenshot({ path: 'ent_post_tab_click.png' });
+                        break;
+                    }
                 }
             }
         } catch (e) { }
