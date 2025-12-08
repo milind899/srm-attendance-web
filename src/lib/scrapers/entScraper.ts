@@ -8,8 +8,8 @@ import { ScraperResult, AttendanceRecord } from '../types';
 const LOGIN_URL = 'https://academia.srmist.edu.in/';
 
 export async function scrapeEntAttendance(username: string, password: string): Promise<ScraperResult> {
-    let browser = null;
-    let page: Page | null = null;
+    let browser: any = null;
+    let page: any = null;
     try {
         console.log('[ENT] Starting scraper...');
 
