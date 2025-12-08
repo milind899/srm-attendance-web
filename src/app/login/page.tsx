@@ -2,19 +2,18 @@
 
 import { Suspense, useState, useEffect, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import styles from './login.module.css';
+import Link from 'next/link';
+import { Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 
 function LoginForm() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const dept = searchParams.get('dept') || 'ENT'; // Default to ENT if missing
-
-    // Tab state
-    const [mode, setMode] = useState<'auto' | 'manual'>('auto');
-    const [manualData, setManualData] = useState('');
+    const deptParam = searchParams.get('dept');
+    const dept = deptParam || 'FSH';
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     // FSH Specific State
     const [captchaImg, setCaptchaImg] = useState<string | null>(null);
@@ -28,10 +27,10 @@ function LoginForm() {
 
     // Fetch Captcha for FSH
     useEffect(() => {
-        if (dept === 'FSH' && mode === 'auto') {
+        if (dept === 'FSH') {
             fetchCaptcha();
         }
-    }, [dept, mode]);
+    }, [dept]);
 
     const fetchCaptcha = async () => {
         try {
@@ -73,17 +72,21 @@ function LoginForm() {
             const data = await res.json();
 
             if (res.ok) {
-                // Success! Save data and redirect
                 localStorage.setItem('attendanceData', JSON.stringify(data.data));
                 localStorage.setItem('department', dept);
-                // Save cookies for internal marks fetch
+                localStorage.setItem('username', username);
+
+                // Save internal marks if returned (ENT optimization)
+                if (data.internalMarks) {
+                    localStorage.setItem('internalMarksData', JSON.stringify(data.internalMarks));
+                }
+
                 if (dept === 'FSH' && cookies) {
-                    localStorage.setItem('fshCookies', cookies);
+                    localStorage.setItem('sessionCookies', cookies);
                 }
                 router.push('/dashboard');
             } else {
                 setError(data.error || 'Login failed');
-                // Refresh captcha on failure if FSH
                 if (dept === 'FSH') fetchCaptcha();
             }
         } catch (err) {
@@ -93,197 +96,139 @@ function LoginForm() {
         }
     };
 
-    const handleManualSubmit = (e: FormEvent) => {
-        e.preventDefault();
-        try {
-            const parsed = JSON.parse(manualData);
-            if (!Array.isArray(parsed)) throw new Error('Invalid data format (must be JSON array)');
-
-            const records = parsed.map((p: any) => ({
-                subjectCode: p.subjectCode,
-                subjectName: p.subjectName,
-                totalHours: p.totalHours,
-                attendedHours: p.attendedHours,
-                percentage: p.percentage,
-                classesToMiss: p.totalHours && p.attendedHours ? Math.floor(((p.attendedHours / 0.75) - p.totalHours) * -1) : 0,
-                classesToAttend: 0
-            }));
-
-            const dataToSave = {
-                studentName: 'Manual User',
-                registrationNumber: 'Unknown',
-                records: records
-            };
-
-            localStorage.setItem('attendanceData', JSON.stringify(dataToSave));
-            localStorage.setItem('department', dept);
-            router.push('/dashboard');
-        } catch (err) {
-            setError('Invalid JSON data. Please make sure you copied it correctly.');
-        }
-    };
-
-    const BOOKMARKLET_CODE = `javascript:(function(){var d=[],t=document.querySelectorAll('table');t.forEach(x=>{if(x.innerText.includes('Course Code')){x.querySelectorAll('tr').forEach(r=>{var c=r.querySelectorAll('td');if(c.length>5&&c[0].innerText.trim()!=='Course Code'){d.push({subjectCode:c[0].innerText.trim(),subjectName:c[1].innerText.trim(),totalHours:parseFloat(c[2].innerText),attendedHours:parseFloat(c[3].innerText),percentage:parseFloat(c[5].innerText)})}})}});if(d.length>0){navigator.clipboard.writeText(JSON.stringify(d)).then(()=>alert('Copied to clipboard! Paste it in the app.')).catch(()=>prompt('Copy this JSON:',JSON.stringify(d)))}else{alert('No attendance table found on this page.')}})()`;
-
     return (
-        <div className={styles.container}>
-            <div className={`glass-panel ${styles.formCard}`}>
-                <div className="flex gap-4 border-b border-white/10 mb-6 pb-2" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '1.5rem', paddingBottom: '0.5rem' }}>
-                    <button
-                        type="button"
-                        onClick={() => setMode('auto')}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: 'white',
-                            cursor: 'pointer',
-                            opacity: mode === 'auto' ? 1 : 0.5,
-                            fontWeight: 'bold',
-                            borderBottom: mode === 'auto' ? '2px solid white' : 'none'
-                        }}
-                    >
-                        Auto Login
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setMode('manual')}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: 'white',
-                            cursor: 'pointer',
-                            opacity: mode === 'manual' ? 1 : 0.5,
-                            fontWeight: 'bold',
-                            borderBottom: mode === 'manual' ? '2px solid white' : 'none'
-                        }}
-                    >
-                        Manual / Mobile
-                    </button>
-                </div>
+        <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
 
-                <h1 className={styles.title}>
-                    {dept} Attendance
-                </h1>
+            {/* Background Effects */}
+            <div className="absolute inset-0 bg-dot-grid opacity-20 pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
 
-                {error && <div className={styles.errorBanner}>{error}</div>}
+            <div className="w-full max-w-md relative animate-scale-in">
+                {/* Card Glow */}
+                <div className="absolute -inset-0.5 bg-gradient-to-b from-primary/30 to-transparent rounded-2xl blur opacity-30"></div>
 
-                {mode === 'auto' ? (
-                    <form onSubmit={handleSubmit} className={styles.form}>
-                        <p className={styles.subtitle}>Enter your credentials to continue</p>
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label}>Username / Reg No.</label>
-                            <input
-                                type="text"
-                                className="input-field"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="e.g. RA21..."
-                                required
-                            />
+                <div className="relative bg-surface border border-border rounded-xl shadow-2xl overflow-hidden">
+                    {/* Header */}
+                    <div className="p-6 sm:p-8 pb-4 sm:pb-6 text-center">
+                        <Link href="/" className="mx-auto w-10 h-10 bg-[#1C1D21] border border-border rounded-lg flex items-center justify-center mb-4 shadow-inner">
+                            <img src="/logo.png" alt="AttendX" className="w-6 h-6" />
+                        </Link>
+                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-2">Welcome to AttendX</h1>
+                        <p className="text-xs sm:text-sm text-textMuted">Sign in to sync your attendance records</p>
+                    </div>
+
+                    {/* Portal Selector */}
+                    <div className="px-6 sm:px-8 pb-4">
+                        <div className="flex bg-[#0B0C0E] rounded-lg p-1 border border-border">
+                            <button
+                                type="button"
+                                onClick={() => router.push('/login?dept=FSH')}
+                                className={`flex-1 py-2.5 text-sm font-medium rounded-md transition-all ${dept === 'FSH' ? 'bg-primary text-white' : 'text-textMuted hover:text-white'}`}
+                            >
+                                FSH Portal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => router.push('/login?dept=ENT')}
+                                className={`flex-1 py-2.5 text-sm font-medium rounded-md transition-all ${dept === 'ENT' ? 'bg-primary text-white' : 'text-textMuted hover:text-white'}`}
+                            >
+                                ENT Portal
+                            </button>
                         </div>
+                    </div>
 
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label}>Password</label>
-                            <input
-                                type="password"
-                                className="input-field"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                required
-                            />
-                        </div>
-
-                        {dept === 'FSH' && (
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Captcha</label>
-                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                    <input
-                                        type="text"
-                                        className="input-field"
-                                        style={{ flex: 1 }}
-                                        value={captchaVal}
-                                        onChange={(e) => setCaptchaVal(e.target.value)}
-                                        placeholder="Enter Captcha"
-                                        required
-                                    />
-                                    {captchaImg ? (
-                                        <div style={{ position: 'relative' }}>
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                src={captchaImg}
-                                                alt="Captcha"
-                                                style={{ height: '40px', borderRadius: '4px', cursor: 'pointer' }}
-                                                onClick={fetchCaptcha}
-                                                title="Click to refresh"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div style={{ width: '100px', height: '40px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>
-                                            Loading...
-                                        </div>
-                                    )}
-                                    <button type='button' onClick={fetchCaptcha} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }} title="Refresh">↻</button>
-                                </div>
+                    {/* Form Area */}
+                    <div className="p-6 sm:p-8 pt-2 sm:pt-4">
+                        {error && (
+                            <div className="mb-6 p-3 rounded bg-red-500/10 border border-red-500/20 text-red-200 text-xs flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                                {error}
                             </div>
                         )}
 
-                        <button
-                            type="submit"
-                            className="btn-primary"
-                            style={{ width: '100%', marginTop: '1rem' }}
-                            disabled={loading}
-                        >
-                            {loading ? 'Logging in...' : 'Login'}
-                        </button>
-                    </form>
-                ) : (
-                    <form onSubmit={handleManualSubmit} className={styles.form}>
-                        <div style={{ fontSize: '0.9rem', color: '#ccc', marginBottom: '1rem' }}>
-                            <p style={{ marginBottom: '0.5rem' }}><strong>Step 1:</strong> Log in to SRM Portal in a new tab/browser.</p>
-                            <p style={{ marginBottom: '0.5rem' }}><strong>Step 2:</strong> Navigate to "Attendance Details".</p>
-                            <p style={{ marginBottom: '0.5rem' }}><strong>Step 3:</strong> Run this script (Console / Bookmarklet):</p>
-                            <div style={{ background: 'black', padding: '0.5rem', borderRadius: '4px', overflowX: 'auto', whiteSpace: 'nowrap', marginBottom: '0.5rem' }}>
-                                <code style={{ fontFamily: 'monospace', color: '#0f0' }}>{BOOKMARKLET_CODE.substring(0, 50)}...</code>
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <div className="space-y-1.5">
+                                <label className="text-xs uppercase tracking-wider font-medium text-textMuted ml-1">Username / Reg No.</label>
+                                <input
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    className="w-full bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-700 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
+                                    placeholder="RA21..."
+                                    required
+                                />
                             </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs uppercase tracking-wider font-medium text-textMuted ml-1">Password</label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-700 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
+                                        placeholder="••••••••"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted hover:text-white transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {dept === 'FSH' && (
+                                <div className="space-y-1.5">
+                                    <label className="text-xs uppercase tracking-wider font-medium text-textMuted ml-1">Security Check</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={captchaVal}
+                                            onChange={(e) => setCaptchaVal(e.target.value)}
+                                            className="flex-1 bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
+                                            placeholder="Enter code"
+                                            required
+                                        />
+                                        <div className="relative group">
+                                            {captchaImg ? (
+                                                <div
+                                                    className="h-[46px] px-2 bg-white rounded-lg flex items-center cursor-pointer opacity-90 hover:opacity-100 transition-opacity border-2 border-transparent hover:border-primary/50"
+                                                    onClick={fetchCaptcha}
+                                                    title="Click to refresh"
+                                                >
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img src={captchaImg} alt="Captcha" className="h-full object-contain" />
+                                                </div>
+                                            ) : (
+                                                <div className="h-[46px] w-24 bg-white/5 rounded-lg flex items-center justify-center animate-pulse">
+                                                    <Loader2 className="w-4 h-4 text-textMuted animate-spin" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <button
-                                type="button"
-                                onClick={() => navigator.clipboard.writeText(BOOKMARKLET_CODE)}
-                                style={{
-                                    background: 'transparent',
-                                    border: '1px solid #aaa',
-                                    padding: '4px 8px',
-                                    borderRadius: '4px',
-                                    color: 'white',
-                                    cursor: 'pointer',
-                                    fontSize: '0.8rem',
-                                    marginBottom: '1rem'
-                                }}
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 rounded-lg transition-all shadow-[0_0_20px_rgba(94,106,210,0.3)] hover:shadow-[0_0_25px_rgba(94,106,210,0.5)] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                Copy Full Script
+                                {loading ? <Loader2 className="animate-spin w-4 h-4" /> : 'Sign In'}
+                                {!loading && <ArrowRight size={16} />}
                             </button>
-                            <p style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong>Step 4:</strong> Paste the copied JSON below:</p>
-                        </div>
+                        </form>
+                    </div>
+                </div>
 
-                        <textarea
-                            className="input-field"
-                            value={manualData}
-                            onChange={(e) => setManualData(e.target.value)}
-                            placeholder='Paste JSON here... [{"subjectCode":...}]'
-                            rows={6}
-                            required
-                            style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
-                        />
-
-                        <button
-                            type="submit"
-                            className="btn-primary"
-                            style={{ width: '100%', marginTop: '1rem' }}
-                        >
-                            Load Data
-                        </button>
-                    </form>
-                )}
+                <div className="mt-8 text-center relative z-50">
+                    <Link href="/" className="inline-block px-4 py-2 text-sm text-textMuted hover:text-white transition-colors">
+                        ← Back to home
+                    </Link>
+                </div>
             </div>
         </div>
     );
@@ -291,7 +236,7 @@ function LoginForm() {
 
 export default function LoginPage() {
     return (
-        <Suspense fallback={<div className="text-center p-10">Loading...</div>}>
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="text-primary animate-spin" /></div>}>
             <LoginForm />
         </Suspense>
     );

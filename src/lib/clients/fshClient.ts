@@ -58,29 +58,61 @@ export class FshClient {
         const params = this.buildLoginParams(username, pass, captcha, csrf);
         const loginUrl = '/students/loginManager/youLogin.jsp';
 
-        try {
-            console.error('[FshClient] Posting to login...');
-            const loginResp = await this.client.post(loginUrl, params.toString(), {
-                maxRedirects: 5,
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-            });
+        // Retry logic for intermittent portal errors
+        const maxRetries = 2;
+        let lastError = '';
 
-            if (loginResp.data.includes('Invalid credentials') || loginResp.data.includes('Invalid Captcha')) {
-                const $ = cheerio.load(loginResp.data);
-                const errorMsg = $('.alert-danger').text().trim() || 'Login failed (Invalid Credentials/Captcha)';
-                return { success: false, error: errorMsg };
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                if (attempt > 0) {
+                    console.error(`[FshClient] Retry attempt ${attempt}/${maxRetries}...`);
+                    await new Promise(r => setTimeout(r, 1000)); // Wait 1s between retries
+                }
+
+                console.error('[FshClient] Posting to login...');
+                const loginResp = await this.client.post(loginUrl, params.toString(), {
+                    maxRedirects: 5,
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    timeout: 15000
+                });
+
+                if (loginResp.data.includes('Invalid credentials') || loginResp.data.includes('Invalid Captcha')) {
+                    const $ = cheerio.load(loginResp.data);
+                    const errorMsg = $('.alert-danger').text().trim() || 'Login failed (Invalid Credentials/Captcha)';
+                    return { success: false, error: errorMsg };
+                }
+
+                const attendanceUrl = '/students/report/studentAttendanceDetails.jsp';
+                console.error('[FshClient] Fetching attendance page...');
+                const attResp = await this.client.get(attendanceUrl, { timeout: 15000 });
+
+                return this.parseAttendance(attResp.data, username);
+
+            } catch (e: any) {
+                lastError = e.message;
+                console.error(`[FshClient] Error (attempt ${attempt + 1}):`, e.message);
+
+                // If it's a 500 error from the portal, retry
+                if (e.response?.status === 500 && attempt < maxRetries) {
+                    continue;
+                }
+
+                // If it's a network or timeout error, retry
+                if ((e.code === 'ECONNRESET' || e.code === 'ETIMEDOUT' || e.message?.includes('timeout')) && attempt < maxRetries) {
+                    continue;
+                }
+
+                // Don't retry for other errors
+                break;
             }
-
-            const attendanceUrl = '/students/report/studentAttendanceDetails.jsp';
-            console.error('[FshClient] Fetching attendance page...');
-            const attResp = await this.client.get(attendanceUrl);
-
-            return this.parseAttendance(attResp.data, username);
-
-        } catch (e: any) {
-            console.error('[FshClient] Error:', e.message);
-            return { success: false, error: e.message };
         }
+
+        // Return a user-friendly error for portal issues
+        if (lastError.includes('500') || lastError.includes('Request failed')) {
+            return { success: false, error: 'SRM Portal is temporarily unavailable. Please try again in a few moments.' };
+        }
+
+        return { success: false, error: lastError || 'Login failed' };
     }
 
     public async fetchInternalMarks(cookieStr: string, username: string): Promise<InternalMarksResult> {
@@ -220,6 +252,26 @@ export class FshClient {
                     const marks = marksParts[0] || 0;
                     const maxMarks = marksParts[1] || 50;
 
+                    // Check for View Details link (usually 4th column)
+                    let detailsUrl = '';
+                    if (cols.length >= 4) {
+                        const link = $(cols[3]).find('a');
+                        const onclick = $(cols[3]).find('input[type="button"]').attr('onclick');
+
+                        if (link.length > 0) {
+                            detailsUrl = link.attr('href') || '';
+                        } else if (onclick) {
+                            // Extract URL from onclick (e.g. window.open('...'))
+                            const match = onclick.match(/['"]([^'"]+\.jsp[^'"]*)['"]/);
+                            if (match) detailsUrl = match[1];
+                        }
+                    }
+
+                    if (detailsUrl) {
+                        console.log(`[FshClient] Found details URL for ${code}: ${detailsUrl}`);
+                        // Future: store this URL to fetch details later
+                    }
+
                     subjects.push({
                         subjectCode: code,
                         subjectName: name,
@@ -265,38 +317,52 @@ export class FshClient {
                 email: '',
                 institution: '',
                 program: '',
+                semester: '',
+                section: '',
+                batch: ''
             };
 
             // Parse table rows looking for profile data
-            $('table tr').each((_, row) => {
+            // SRM sometimes uses nested tables, so we just look at all TRs
+            $('tr').each((_, row) => {
                 const cells = $(row).find('td');
                 if (cells.length >= 2) {
-                    const label = $(cells[0]).text().trim().toLowerCase();
+                    const label = $(cells[0]).text().trim().toLowerCase().replace(/[:.]/g, '');
                     const value = $(cells[1]).text().trim();
 
-                    if (label.includes('student name') || label.includes('name')) {
+                    if (!value) return;
+
+                    if (label.includes('student name') || label === 'name') {
                         profile.studentName = value;
-                    } else if (label.includes('student id')) {
+                    } else if (label.includes('student id') || label === 'id') {
                         profile.studentId = value;
-                    } else if (label.includes('register') || label.includes('reg')) {
+                    } else if (label.includes('register') || label.includes('reg no')) {
                         profile.registrationNumber = value;
                     } else if (label.includes('email')) {
                         profile.email = value;
-                    } else if (label.includes('institution') || label.includes('faculty')) {
-                        profile.institution = value;
                     } else if (label.includes('program') || label.includes('course')) {
                         profile.program = value;
+                    } else if (label.includes('semester')) {
+                        profile.semester = value;
+                    } else if (label.includes('section')) {
+                        profile.section = value;
+                    } else if (label.includes('batch')) {
+                        profile.batch = value;
                     }
                 }
             });
 
-            // Also check for text content directly
-            const pageText = $('body').text();
-
             // Extract program from page if not found
+            const pageText = $('body').text();
             if (!profile.program) {
                 const programMatch = pageText.match(/B\.?Tech|B\.?B\.?A|M\.?Tech|M\.?B\.?A/i);
                 if (programMatch) profile.program = programMatch[0];
+            }
+            if (!profile.studentName) {
+                // Try finding Welcome message
+                const welcome = $(':contains("Welcome")').last().text();
+                const match = welcome.match(/Welcome\s+(.+?)\s*\(/i);
+                if (match) profile.studentName = match[1].trim();
             }
 
             console.error('[FshClient] Profile parsed:', profile);

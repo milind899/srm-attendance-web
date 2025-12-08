@@ -1,12 +1,11 @@
-const CACHE_NAME = 'attend-v1';
+const CACHE_NAME = 'attendx-v1';
 const STATIC_ASSETS = [
     '/',
-    '/dashboard',
-    '/login',
+    '/logo.png',
     '/manifest.json'
 ];
 
-// Install event
+// Install event - cache static assets
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -16,23 +15,21 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-// Activate event
+// Activate event - clean old caches
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
-                cacheNames.map((name) => {
-                    if (name !== CACHE_NAME) {
-                        return caches.delete(name);
-                    }
-                })
+                cacheNames
+                    .filter((name) => name !== CACHE_NAME)
+                    .map((name) => caches.delete(name))
             );
         })
     );
     self.clients.claim();
 });
 
-// Fetch event - Network first, fall back to cache
+// Fetch event - network first, fallback to cache
 self.addEventListener('fetch', (event) => {
     // Skip non-GET requests
     if (event.request.method !== 'GET') return;
@@ -53,10 +50,15 @@ self.addEventListener('fetch', (event) => {
                 return response;
             })
             .catch(() => {
-                // Network failed, try cache
-                return caches.match(event.request).then((cached) => {
-                    return cached || new Response('Offline', { status: 503 });
-                });
+                // Fallback to cache when offline
+                return caches.match(event.request);
             })
     );
+});
+
+// Handle messages from the app
+self.addEventListener('message', (event) => {
+    if (event.data === 'skipWaiting') {
+        self.skipWaiting();
+    }
 });

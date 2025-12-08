@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { AttendanceRecord } from '../../lib/types';
+import { AttendanceRecord } from '@/lib/types';
 
 // Allow CORS for this endpoint so the bookmarklet can call it from srmist.edu.in
 export async function POST(req: Request) {

@@ -1,24 +1,30 @@
 {
-    "name": "SRM Attend",
-    "short_name": "Attend",
-    "description": "Track your SRM attendance easily",
+    "name": "AttendX",
+    "short_name": "AttendX",
+    "description": "Smart attendance tracking for SRM students",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#0c0c0f",
-    "theme_color": "#10b981",
+    "background_color": "#0B0C0E",
+    "theme_color": "#5E6AD2",
     "orientation": "portrait-primary",
     "icons": [
         {
-            "src": "/icons/icon-192.png",
+            "src": "/logo.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "/icons/icon-512.png",
+            "src": "/logo.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any maskable"
         }
-    ]
+    ],
+    "screenshots": [],
+    "categories": [
+        "education",
+        "utilities"
+    ],
+    "prefer_related_applications": false
 }

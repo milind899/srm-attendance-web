@@ -298,15 +298,148 @@ export async function loginAndScrapeFSH(
         }));
 
         log('Scraping successful.');
+        // Extract Internal Marks (Test Performance) - Same strategy as ENT
+        log('Extracting internal marks...');
+        let internalMarksData: any = null;
+
+        for (const frame of allPages.flatMap(p => p.frames())) {
+            try {
+                const marksData = await frame.evaluate(() => {
+                    const subjects: any[] = [];
+                    const tables = document.querySelectorAll('table');
+
+                    for (const t of tables) {
+                        const fullText = (t.innerText || '').toLowerCase();
+                        if ((!fullText.includes('test performance') && !fullText.includes('internal marks')) || !fullText.includes('course code')) continue;
+
+                        const rows = Array.from((t as HTMLTableElement).rows);
+                        if (rows.length < 2) continue;
+
+                        // Start from row 1 (skip header)
+                        for (let i = 1; i < rows.length; i++) {
+                            const row = rows[i];
+                            const cells = row.cells;
+                            if (cells.length < 3) continue;
+
+                            const code = (cells[0].innerText || '').trim();
+                            // Clean up code 
+                            const cleanCode = code.split('\n')[0]
+                                .replace(/(Regular|Enrichment|Practical|Theory|Online|Lab)/gi, '')
+                                .trim();
+
+                            // Get Category from 2nd cell if available
+                            let category = 'Theory';
+                            if (cells[1]) {
+                                const typeText = (cells[1].innerText || '').toLowerCase();
+                                if (typeText.includes('practical') || typeText.includes('lab')) category = 'Practical';
+                            }
+
+                            if (!cleanCode || cleanCode.length < 3) continue;
+
+                            // The 3rd cell (index 2) usually contains the nested table with marks
+                            const testCell = cells[2];
+                            const nestedTable = testCell.querySelector('table');
+
+                            const components: any[] = [];
+                            let totalMarks = 0;
+                            let maxTotalMarks = 0;
+
+                            if (nestedTable && nestedTable.rows.length >= 2) {
+                                const headerRow = nestedTable.rows[0]; // Test Name / Max
+                                const valueRow = nestedTable.rows[1];  // Scored Mark
+
+                                for (let j = 0; j < headerRow.cells.length; j++) {
+                                    // Header format: "FT-III/15.00"
+                                    const headerText = (headerRow.cells[j].innerText || '').trim();
+                                    const valueText = (valueRow.cells[j]?.innerText || '').trim() || '0';
+
+                                    const parts = headerText.split('/');
+                                    if (parts.length === 2) {
+                                        const testName = parts[0].trim();
+                                        const maxMark = parseFloat(parts[1]);
+
+                                        let scoredMark = 0;
+                                        if (valueText.toLowerCase().includes('abs') || valueText === '-') {
+                                            scoredMark = 0;
+                                        } else {
+                                            scoredMark = parseFloat(valueText);
+                                        }
+
+                                        if (!isNaN(maxMark) && !isNaN(scoredMark)) {
+                                            components.push({
+                                                component: testName,
+                                                marks: scoredMark,
+                                                maxMarks: maxMark,
+                                                date: new Date().toISOString()
+                                            });
+                                            totalMarks += scoredMark;
+                                            maxTotalMarks += maxMark;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (components.length > 0) {
+                                subjects.push({
+                                    subjectCode: cleanCode,
+                                    subjectName: 'Unknown',
+                                    category,
+                                    totalMarks,
+                                    maxTotalMarks,
+                                    components
+                                });
+                            }
+                        }
+                    }
+                    return subjects;
+                });
+
+                if (marksData && marksData.length > 0) {
+                    log(`Found ${marksData.length} subjects with internal marks`);
+                    internalMarksData = {
+                        studentName: username,
+                        registrationNumber: username,
+                        subjects: marksData
+                    };
+                    break;
+                }
+            } catch (e) { }
+        }
+
+        // Merge subject names from attendance into internal marks if available
+        if (internalMarksData) {
+            internalMarksData.subjects = internalMarksData.subjects.map((sub: any) => {
+                // Try matching by Code AND Category first
+                let match = processedRecords.find(r =>
+                    r.subjectCode === sub.subjectCode &&
+                    r.category === sub.category
+                );
+
+                if (!match) {
+                    match = processedRecords.find(r => r.subjectCode === sub.subjectCode);
+                }
+
+                let name = match ? match.subjectName : sub.subjectName || sub.subjectCode;
+                if (sub.category === 'Practical' && !name.toLowerCase().includes('practical') && !name.toLowerCase().includes('lab')) {
+                    name += ' (Practical)';
+                }
+
+                return {
+                    ...sub,
+                    subjectName: name
+                };
+            });
+        }
+
         return {
             success: true,
             data: {
                 studentName: username,
                 registrationNumber: username,
                 records: processedRecords
-            }
+            },
+            internalMarks: internalMarksData || undefined
         };
-
     } catch (error) {
         errorLog('Scraping failed', error);
         return {

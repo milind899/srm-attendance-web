@@ -2,35 +2,75 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { AttendanceData, AttendanceRecord, InternalMarksData, SubjectMarks } from '@/lib/types';
-import styles from './dashboard.module.css';
+import { DecryptText } from '@/components/DecryptText';
 
-type Tab = 'attendance' | 'marks' | 'predictor';
+type Tab = 'attendance' | 'marks' | 'grades';
+
+// Grade thresholds for 100-based total
+const GRADES = [
+    { grade: 'O', min: 91, gp: 10, color: 'text-emerald-400', bg: 'bg-emerald-500' },
+    { grade: 'A+', min: 81, gp: 9, color: 'text-green-400', bg: 'bg-green-500' },
+    { grade: 'A', min: 71, gp: 8, color: 'text-lime-400', bg: 'bg-lime-500' },
+    { grade: 'B+', min: 61, gp: 7, color: 'text-yellow-400', bg: 'bg-yellow-500' },
+    { grade: 'B', min: 51, gp: 6, color: 'text-orange-400', bg: 'bg-orange-500' },
+    { grade: 'C', min: 40, gp: 5, color: 'text-red-400', bg: 'bg-red-500' },
+    { grade: 'F', min: 0, gp: 0, color: 'text-red-600', bg: 'bg-red-600' },
+];
 
 export default function Dashboard() {
     const router = useRouter();
     const [data, setData] = useState<AttendanceData | null>(null);
-    const [marksData, setMarksData] = useState<InternalMarksData | null>(null);
     const [department, setDepartment] = useState<string>('ENT');
     const [loading, setLoading] = useState(true);
-    const [marksLoading, setMarksLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<Tab>('attendance');
-    const [predictDays, setPredictDays] = useState(0);
-    const [showProfile, setShowProfile] = useState(false);
-    const [profile, setProfile] = useState<any>(null);
-    const [profileLoading, setProfileLoading] = useState(false);
+
+    // Internal Marks State
+    const [internalMarks, setInternalMarks] = useState<InternalMarksData | null>(null);
+    const [marksLoading, setMarksLoading] = useState(false);
+    const [marksError, setMarksError] = useState<string | null>(null);
+
+    // Grade goal state - target grade for each subject
+    const [targetGrades, setTargetGrades] = useState<{ [key: string]: string }>({});
 
     useEffect(() => {
+        document.documentElement.classList.add('dark');
+
         const stored = localStorage.getItem('attendanceData');
         const dept = localStorage.getItem('department') || 'ENT';
         setDepartment(dept);
+
+        // Load cached internal marks
+        const cachedMarks = localStorage.getItem('internalMarksData');
+        if (cachedMarks) {
+            try {
+                setInternalMarks(JSON.parse(cachedMarks));
+            } catch (e) {
+                console.error('Failed to parse cached marks:', e);
+            }
+        }
 
         if (!stored) {
             router.push('/');
             return;
         }
         try {
-            setData(JSON.parse(stored));
+            const parsedData: AttendanceData = JSON.parse(stored);
+            setData(parsedData);
+
+            // Initialize target grades to 'A' for all subjects
+            const initialTargets: { [key: string]: string } = {};
+            parsedData.records.forEach(r => {
+                initialTargets[r.subjectCode] = 'A';
+            });
+            setTargetGrades(initialTargets);
+
+            // Fetch internal marks for FSH department only if not already present
+            if (dept === 'FSH' && !cachedMarks) {
+                fetchInternalMarks();
+            }
+
         } catch {
             router.push('/');
         } finally {
@@ -38,367 +78,640 @@ export default function Dashboard() {
         }
     }, [router]);
 
-    useEffect(() => {
-        if (activeTab === 'marks' && department === 'FSH' && !marksData && !marksLoading) {
-            fetchInternalMarks();
-        }
-    }, [activeTab, department]);
-
     const fetchInternalMarks = async () => {
-        setMarksLoading(true);
-        try {
-            const cookies = localStorage.getItem('fshCookies') || '';
-            const username = data?.registrationNumber || '';
+        const cookies = localStorage.getItem('sessionCookies');
+        const username = localStorage.getItem('username');
 
-            const res = await fetch('/api/internalmarks', {
+        if (!cookies || !username) {
+            setMarksError('Session expired. Please login again.');
+            return;
+        }
+
+        setMarksLoading(true);
+        setMarksError(null);
+
+        try {
+            const response = await fetch('/api/internalmarks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cookies, username })
             });
 
-            const result = await res.json();
-            if (result.success) {
-                setMarksData(result.data);
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                setInternalMarks(result.data);
+                localStorage.setItem('internalMarksData', JSON.stringify(result.data));
+            } else {
+                setMarksError(result.error || 'Failed to fetch marks');
             }
-        } catch (e) {
-            console.error('Failed to fetch marks:', e);
+        } catch {
+            setMarksError('Network error. Please try again.');
         } finally {
             setMarksLoading(false);
         }
     };
 
-    const fetchProfile = async () => {
-        if (profile || profileLoading || department !== 'FSH') return;
-
-        setProfileLoading(true);
-        try {
-            const cookies = localStorage.getItem('fshCookies') || '';
-            const username = data?.registrationNumber || '';
-
-            const res = await fetch('/api/profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cookies, username })
-            });
-
-            const result = await res.json();
-            if (result.success && result.data) {
-                setProfile(result.data);
-            }
-        } catch (e) {
-            console.error('Failed to fetch profile:', e);
-        } finally {
-            setProfileLoading(false);
+    const calculateGrade = (total: number) => {
+        for (const g of GRADES) {
+            if (total >= g.min) return g;
         }
+        return GRADES[GRADES.length - 1];
     };
 
-    const handleOpenProfile = () => {
-        setShowProfile(true);
-        fetchProfile();
+    // Calculate required end sem marks to achieve target grade - NO CAP
+    const calculateRequiredEndSem = (internalMark: number, targetGrade: string): number => {
+        const gradeInfo = GRADES.find(g => g.grade === targetGrade);
+        if (!gradeInfo) return 0;
+
+        const endSemConverted = gradeInfo.min - internalMark;
+
+        // Logic for ENT: End sem out of 75, converted to 40
+        // endSemConverted = (endSemActual / 75) * 40
+        // endSemActual = (endSemConverted * 75) / 40
+
+        // Logic for others (FSH): End sem out of 100, converted to 50
+        // endSemConverted = (endSemActual / 100) * 50 = endSemActual / 2
+        // endSemActual = endSemConverted * 2
+
+        if (department === 'ENT') {
+            return Math.max(0, (endSemConverted * 75) / 40);
+        }
+
+        return Math.max(0, endSemConverted * 2);
     };
 
-    if (loading || !data) {
-        return (
-            <div className={styles.loadingContainer}>
-                <div className={styles.spinner}></div>
-                <p>Loading...</p>
-            </div>
-        );
-    }
+    // Calculate predicted GPA based on current marks and target grades
+    const calculatePredictedGPA = () => {
+        if (!internalMarks?.subjects || internalMarks.subjects.length === 0) return { gpa: 0, totalCredits: 0 };
 
-    // Calculate overall stats
-    const totalHours = data.records.reduce((sum, r) => sum + (r.totalHours || 0), 0);
-    const attendedHours = data.records.reduce((sum, r) => sum + (r.attendedHours || 0), 0);
-    const overallPercentage = totalHours > 0 ? Math.round((attendedHours / totalHours) * 100 * 100) / 100 : 0;
+        let totalPoints = 0;
+        let totalCredits = 0;
 
-    const buffer = attendedHours - (0.75 * totalHours);
-    const canMissHours = buffer >= 0 ? Math.floor(buffer) : 0;
-    const needToAttendHours = buffer < 0 ? Math.ceil(Math.abs(buffer) / 0.25) : 0;
+        internalMarks.subjects.forEach(subject => {
+            const targetGrade = targetGrades[subject.subjectCode] || 'A';
+            const gradeInfo = GRADES.find(g => g.grade === targetGrade);
+            const credit = 4; // Default credit
 
-    const predictorMaxMiss = Math.floor(buffer + 0.25 * predictDays);
+            if (gradeInfo) {
+                totalPoints += gradeInfo.gp * credit;
+                totalCredits += credit;
+            }
+        });
+
+        return {
+            gpa: totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : '0.00',
+            totalCredits
+        };
+    };
+
+    if (loading || !data) return null;
+
+    // Calculate overall attendance
+    const totalHours = data.records.reduce((s, r) => s + (r.totalHours || 0), 0);
+    const attendedHours = data.records.reduce((s, r) => s + (r.attendedHours || 0), 0);
+    const overallPercentage = totalHours ? Math.round((attendedHours / totalHours) * 100) : 0;
+
+    // FSH: Calculate overall can-miss
+    const overallCanMiss = Math.floor((attendedHours - 0.75 * totalHours) / 0.75);
+    const overallNeedToAttend = Math.ceil((0.75 * totalHours - attendedHours) / 0.25);
+
+    // Subjects with actual marks (not estimated)
+    const subjectsWithMarks = internalMarks?.subjects || [];
 
     return (
-        <div className={styles.layout}>
-            {/* Sidebar */}
-            <aside className={styles.sidebar}>
-                <div className={styles.logo}>
-                    <svg className={styles.logoIcon} viewBox="0 0 24 24" fill="none">
-                        <rect x="2" y="4" width="6" height="16" rx="1" fill="#10b981" />
-                        <rect x="9" y="8" width="6" height="12" rx="1" fill="#22d3ee" />
-                        <rect x="16" y="2" width="6" height="18" rx="1" fill="#f472b6" />
-                    </svg>
-                    <span className={styles.logoText}>Attend</span>
-                </div>
+        <div className="min-h-screen bg-background text-textMain selection:bg-primary/30 selection:text-white font-sans animate-scale-in origin-center">
+            {/* Background Glow Effects - like homepage */}
+            <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-glow-gradient opacity-40 pointer-events-none z-0" />
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none z-0" />
 
-                <nav className={styles.nav}>
-                    <button
-                        className={`${styles.navItem} ${activeTab === 'attendance' ? styles.navActive : ''}`}
-                        onClick={() => setActiveTab('attendance')}
-                    >
-                        <svg className={styles.navIcon} viewBox="0 0 24 24" fill="none">
-                            <rect x="3" y="3" width="7" height="7" rx="1.5" fill="#22d3ee" />
-                            <rect x="3" y="14" width="7" height="7" rx="1.5" fill="#22d3ee" opacity="0.5" />
-                            <rect x="14" y="3" width="7" height="7" rx="1.5" fill="#22d3ee" opacity="0.5" />
-                            <rect x="14" y="14" width="7" height="7" rx="1.5" fill="#22d3ee" opacity="0.3" />
-                        </svg>
-                        <span>Attendance</span>
-                    </button>
-                    {department === 'FSH' && (
-                        <>
+            {/* Navbar */}
+            <nav className="fixed top-0 left-0 right-0 z-50 glass-nav">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+                    <Link href="/" className="flex items-center gap-2">
+                        <img src="/logo.png" alt="AttendX" className="w-8 h-8" />
+                        <span className="font-semibold text-lg tracking-tight text-textMain">AttendX</span>
+                    </Link>
+
+                    {/* Desktop Tabs */}
+                    <div className="hidden md:flex items-center gap-1 bg-surface/50 border border-border rounded-full p-1 backdrop-blur-sm">
+                        {(['attendance', 'marks', 'grades'] as Tab[]).map((tab) => (
                             <button
-                                className={`${styles.navItem} ${activeTab === 'marks' ? styles.navActive : ''}`}
-                                onClick={() => setActiveTab('marks')}
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`px-5 py-2 text-sm font-medium rounded-full transition-all ${activeTab === tab
+                                    ? 'bg-[#EEEEF0] text-black'
+                                    : 'text-textMuted hover:text-white'
+                                    }`}
                             >
-                                <svg className={styles.navIcon} viewBox="0 0 24 24" fill="none">
-                                    <rect x="4" y="4" width="16" height="16" rx="2" fill="#f472b6" opacity="0.2" />
-                                    <path d="M7 9h10M7 13h6M7 17h8" stroke="#f472b6" strokeWidth="2" strokeLinecap="round" />
-                                </svg>
-                                <span>Marks</span>
+                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
                             </button>
-                            <button
-                                className={`${styles.navItem} ${activeTab === 'predictor' ? styles.navActive : ''}`}
-                                onClick={() => setActiveTab('predictor')}
-                            >
-                                <svg className={styles.navIcon} viewBox="0 0 24 24" fill="none">
-                                    <circle cx="12" cy="12" r="9" fill="#a855f7" opacity="0.2" />
-                                    <circle cx="12" cy="12" r="5" fill="#a855f7" opacity="0.5" />
-                                    <circle cx="12" cy="12" r="2" fill="#a855f7" />
-                                </svg>
-                                <span>Predictor</span>
-                            </button>
-                        </>
-                    )}
-                </nav>
-
-                <div className={styles.userSection} onClick={handleOpenProfile} style={{ cursor: 'pointer' }}>
-                    <div className={styles.userAvatar}>
-                        {data.studentName?.charAt(0) || 'U'}
+                        ))}
                     </div>
-                    <div className={styles.userInfo}>
-                        <span className={styles.userName}>{data.studentName}</span>
-                        <span className={styles.userReg}>{data.registrationNumber}</span>
-                    </div>
-                </div>
-            </aside>
 
-            {/* Profile Modal */}
-            {showProfile && (
-                <div className={styles.modalOverlay} onClick={() => setShowProfile(false)}>
-                    <div className={styles.profileModal} onClick={(e) => e.stopPropagation()}>
-                        <button className={styles.modalClose} onClick={() => setShowProfile(false)}>✕</button>
-
-                        <h2 className={styles.profileName}>{profile?.studentName || data.studentName}</h2>
-                        <p className={styles.profileReg}>{profile?.registrationNumber || data.registrationNumber}</p>
-
-                        <div className={styles.profileGrid}>
-                            <div className={styles.profileItem}>
-                                <span className={styles.profileLabel}>Year:</span>
-                                <span className={styles.profileValue}>3</span>
-                            </div>
-                            <div className={styles.profileItem}>
-                                <span className={styles.profileLabel}>Semester:</span>
-                                <span className={styles.profileValue}>5</span>
-                            </div>
-                            <div className={styles.profileItem}>
-                                <span className={styles.profileLabel}>Section:</span>
-                                <span className={styles.profileValue}>A1</span>
-                            </div>
-                            <div className={styles.profileItem}>
-                                <span className={styles.profileLabel}>Batch:</span>
-                                <span className={styles.profileValue}>1</span>
-                            </div>
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm text-textMuted hidden sm:block">{data.studentName || 'Student'}</span>
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent-yellow flex items-center justify-center text-white text-sm font-bold">
+                            {data.studentName?.charAt(0) || 'S'}
                         </div>
-
-                        <div className={styles.profileSection}>
-                            <span className={styles.profileLabel}>Program:</span>
-                            <span className={styles.profileValue}>B.Tech</span>
-                        </div>
-                        <div className={styles.profileSection}>
-                            <span className={styles.profileLabel}>Department:</span>
-                            <span className={styles.profileValue}>{department === 'FSH' ? 'Computer Science and Engineering (CS)' : 'Engineering & Technology'}</span>
-                        </div>
-
                         <button
-                            className={styles.logoutBtn}
-                            onClick={() => { localStorage.clear(); router.push('/'); }}
+                            onClick={() => {
+                                localStorage.clear();
+                                router.push('/');
+                            }}
+                            className="ml-2 p-2 rounded-full bg-white/5 hover:bg-white/10 text-textMuted hover:text-white transition-colors"
+                            title="Log Out"
                         >
-                            Logout
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
                         </button>
                     </div>
                 </div>
-            )}
+            </nav>
 
-            {/* Main Content */}
-            <main className={styles.main}>
-                {/* === ATTENDANCE TAB === */}
+            <main className="relative z-10 pt-20 pb-24">
+                {/* Attendance Tab */}
                 {activeTab === 'attendance' && (
-                    <div className={styles.content}>
-                        <header className={styles.pageHeader}>
-                            <h1>Attendance</h1>
-                            {department === 'FSH' && (
-                                <div className={styles.overallBadge} style={{
-                                    background: overallPercentage >= 75 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                    color: overallPercentage >= 75 ? '#22c55e' : '#ef4444'
-                                }}>
-                                    <span className={styles.overallPct}>{overallPercentage}%</span>
-                                    <span className={styles.overallLabel}>Overall</span>
-                                </div>
-                            )}
-                        </header>
-
-                        {/* Stats Row */}
-                        {department === 'FSH' && (
-                            <div className={styles.statsRow}>
-                                <div className={styles.statCard}>
-                                    <span className={styles.statNum}>{totalHours}</span>
-                                    <span className={styles.statLabel}>Total</span>
-                                </div>
-                                <div className={styles.statCard}>
-                                    <span className={styles.statNum}>{attendedHours}</span>
-                                    <span className={styles.statLabel}>Present</span>
-                                </div>
-                                <div className={styles.statCard}>
-                                    <span className={styles.statNum} style={{ color: overallPercentage >= 75 ? '#22c55e' : '#ef4444' }}>
-                                        {overallPercentage >= 75 ? `+${canMissHours}` : `-${needToAttendHours}`}
-                                    </span>
-                                    <span className={styles.statLabel}>{overallPercentage >= 75 ? 'Can Miss' : 'Need'}</span>
-                                </div>
+                    <div className="max-w-6xl mx-auto px-4">
+                        {/* Hero Stats - Mobile First */}
+                        <div className="text-center mb-6 opacity-0 animate-blur-in">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/50 px-3 py-1.5 text-xs text-textMuted mb-4 backdrop-blur-sm">
+                                <span className={`w-2 h-2 rounded-full ${overallPercentage >= 75 ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></span>
+                                <DecryptText
+                                    text={overallPercentage >= 75 ? 'Attendance Safe' : 'Attendance Critical'}
+                                    speed={30}
+                                    delay={200}
+                                />
                             </div>
-                        )}
 
-                        {/* Attendance List */}
-                        <div className={styles.attendanceList}>
-                            <div className={styles.listHeader}>
-                                <span>Subject</span>
-                                <span>Margin</span>
-                                <span>Hours</span>
-                                <span>%</span>
+                            <h1 className="text-5xl sm:text-6xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-[#EEEEF0] via-[#EEEEF0] to-[#EEEEF0]/60 mb-2">
+                                {overallPercentage}%
+                            </h1>
+
+                            <p className="text-sm text-textMuted mb-1">
+                                {attendedHours} / {totalHours} hours
+                            </p>
+
+                            <div className={`inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full border ${overallPercentage >= 75
+                                ? 'border-green-500/30 bg-green-500/10 text-green-400'
+                                : 'border-red-500/30 bg-red-500/10 text-red-400'
+                                }`}>
+                                <span className="text-lg font-bold">
+                                    {overallPercentage >= 75 ? Math.max(0, overallCanMiss) : Math.max(0, overallNeedToAttend)}
+                                </span>
+                                <span className="text-xs">
+                                    {overallPercentage >= 75 ? 'can skip' : 'need'}
+                                </span>
                             </div>
-                            {data.records.map((record, index) => (
-                                <AttendanceRow key={`${record.subjectCode}-${index}`} record={record} />
-                            ))}
                         </div>
-                    </div>
-                )}
 
-                {/* === MARKS TAB === */}
-                {activeTab === 'marks' && (
-                    <div className={styles.content}>
-                        <header className={styles.pageHeader}>
-                            <h1>Internal Marks</h1>
-                        </header>
-
-                        {marksLoading ? (
-                            <div className={styles.loadingContainer}><div className={styles.spinner}></div></div>
-                        ) : marksData ? (
-                            <div className={styles.marksGrid}>
-                                {marksData.subjects.map((subject, index) => (
-                                    <MarksCard key={`${subject.subjectCode}-${index}`} subject={subject} />
+                        {/* Subject Cards - Horizontal Scroll on Mobile */}
+                        <div className="opacity-0 animate-blur-in delay-200">
+                            {/* Mobile: Horizontal Scroll */}
+                            <div className="overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide sm:hidden">
+                                <div className="flex gap-3" style={{ width: 'max-content' }}>
+                                    {data.records.map((record, i) => (
+                                        <div key={`${record.subjectCode}-${i}`} className="w-[85vw] max-w-[300px] flex-shrink-0 snap-center">
+                                            <SubjectCard record={record} department={department} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            {/* Desktop: Grid */}
+                            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {data.records.map((record, i) => (
+                                    <SubjectCard key={`${record.subjectCode}-${i}`} record={record} department={department} />
                                 ))}
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Marks Tab */}
+                {activeTab === 'marks' && (
+                    <div className="max-w-6xl mx-auto px-4">
+                        {/* Hero Section - Mobile Optimized */}
+                        <div className="text-center mb-6 opacity-0 animate-blur-in">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/50 px-3 py-1.5 text-xs text-textMuted mb-4 backdrop-blur-sm">
+                                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                <DecryptText text="Internal Assessment" speed={30} delay={200} />
+                            </div>
+
+                            <h1 className="text-3xl sm:text-4xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-[#EEEEF0] via-[#EEEEF0] to-[#EEEEF0]/60 mb-2">
+                                Internal Marks
+                            </h1>
+
+                            <p className="text-sm text-textMuted">
+                                Tests & assignments
+                            </p>
+                        </div>
+
+                        {department !== 'FSH' && !subjectsWithMarks.length ? (
+                            <div className="text-center py-8 opacity-0 animate-blur-in delay-200">
+                                <p className="text-textMuted mb-4 text-sm">Marks available only for FSH portal.</p>
+                                <button onClick={() => setActiveTab('grades')} className="bg-[#EEEEF0] text-black px-5 py-2.5 rounded-full font-medium text-sm hover:bg-white transition-colors">
+                                    Grade Predictor →
+                                </button>
+                            </div>
+                        ) : marksLoading ? (
+                            <div className="flex justify-center py-12">
+                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        ) : marksError ? (
+                            <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
+                                <p className="text-red-400 mb-6">{marksError}</p>
+                                <button onClick={() => router.push('/login?dept=FSH')} className="bg-red-500 text-white px-6 py-3 rounded-full font-medium hover:bg-red-600 transition-colors">
+                                    Login Again →
+                                </button>
+                            </div>
+                        ) : subjectsWithMarks.length > 0 ? (
+                            <div className="opacity-0 animate-blur-in delay-200">
+                                {/* Mobile: Horizontal Scroll */}
+                                <div className="overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide sm:hidden">
+                                    <div className="flex gap-3" style={{ width: 'max-content' }}>
+                                        {subjectsWithMarks.map((subject, i) => (
+                                            <div key={`${subject.subjectCode}-${i}`} className="w-[85vw] max-w-[300px] flex-shrink-0 snap-center">
+                                                <MarksCard subject={subject} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                {/* Desktop: Grid */}
+                                <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {subjectsWithMarks.map((subject, i) => (
+                                        <MarksCard key={`${subject.subjectCode}-${i}`} subject={subject} />
+                                    ))}
+                                </div>
+                            </div>
                         ) : (
-                            <div className={styles.emptyState}>
-                                <p>Could not load marks. Try logging in again.</p>
+                            <div className="text-center py-8 opacity-0 animate-blur-in delay-200">
+                                <p className="text-textMuted mb-4 text-sm">No marks data available.</p>
+                                <button onClick={fetchInternalMarks} className="bg-[#EEEEF0] text-black px-5 py-2.5 rounded-full font-medium text-sm hover:bg-white transition-colors">
+                                    Fetch Marks →
+                                </button>
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* === PREDICTOR TAB === */}
-                {activeTab === 'predictor' && (
-                    <div className={styles.content}>
-                        <header className={styles.pageHeader}>
-                            <h1>Attendance Predictor</h1>
-                        </header>
-
-                        <div className={styles.predictorBox}>
-                            <p className={styles.predictorLabel}>If next classes conducted:</p>
-                            <div className={styles.predictorInputRow}>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    value={predictDays}
-                                    onChange={(e) => setPredictDays(Math.max(0, parseInt(e.target.value) || 0))}
-                                    className={styles.predictorInput}
-                                />
-                                <span>hours</span>
+                {/* Grades Tab */}
+                {activeTab === 'grades' && (
+                    <div className="max-w-6xl mx-auto px-4">
+                        {/* Hero Section - Mobile Optimized */}
+                        <div className="text-center mb-6 opacity-0 animate-blur-in">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/50 px-3 py-1.5 text-xs text-textMuted mb-4 backdrop-blur-sm">
+                                <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
+                                <DecryptText text="Grade Predictor" speed={30} delay={200} />
                             </div>
 
-                            <div className={styles.predictorResult}>
-                                <div className={styles.predictorCalc}>
-                                    <span>Buffer: {Math.floor(buffer)}</span>
-                                    <span>+ Bonus: {Math.floor(0.25 * predictDays)}</span>
-                                </div>
-                                <div className={styles.predictorAnswer}>
-                                    <span className={styles.predictorBig}>{predictorMaxMiss}</span>
-                                    <span>classes can be missed</span>
-                                </div>
-                            </div>
-
-                            <p className={styles.predictorFormula}>
-                                Formula: A ≤ {Math.floor(buffer)} + (0.25 × {predictDays}) = {predictorMaxMiss}
-                            </p>
+                            {subjectsWithMarks.length > 0 ? (
+                                <>
+                                    <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-accent-yellow via-accent-yellow to-accent-yellow/60 mb-2">
+                                        {calculatePredictedGPA().gpa}
+                                    </h1>
+                                    <p className="text-base sm:text-lg text-textMuted mb-1">Predicted GPA</p>
+                                    <p className="text-xs sm:text-sm text-textMuted/70">Based on target grades below</p>
+                                </>
+                            ) : (
+                                <>
+                                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-[#EEEEF0] via-[#EEEEF0] to-[#EEEEF0]/60 mb-4">
+                                        Grade Predictor
+                                    </h1>
+                                    <p className="text-lg text-textMuted">Calculate your target grades</p>
+                                </>
+                            )}
                         </div>
+
+                        {/* Grades Cards Grid - Horizontal Scroll on Mobile */}
+                        {subjectsWithMarks.length > 0 ? (
+                            <div className="opacity-0 animate-blur-in delay-200">
+                                {/* Mobile: Horizontal Scroll */}
+                                <div className="overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide sm:hidden">
+                                    <div className="flex gap-3" style={{ width: 'max-content' }}>
+                                        {subjectsWithMarks.map((subject, i) => {
+                                            const targetGrade = targetGrades[subject.subjectCode] || 'A';
+                                            const requiredEndSem = calculateRequiredEndSem(subject.totalMarks, targetGrade);
+                                            const maxEndSem = department === 'ENT' ? 75 : 100;
+                                            const isPossible = requiredEndSem <= maxEndSem;
+                                            const gradeInfo = GRADES.find(g => g.grade === targetGrade) || GRADES[2];
+
+                                            return (
+                                                <div
+                                                    key={`grade-${subject.subjectCode}-${i}`}
+                                                    className="w-[85vw] max-w-[300px] flex-shrink-0 snap-center bg-surface border border-border rounded-xl p-4"
+                                                >
+                                                    {/* Header */}
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div className="flex-1 min-w-0 mr-2">
+                                                            <h3 className="font-semibold text-white text-sm truncate">
+                                                                {subject.subjectName}
+                                                            </h3>
+                                                            <p className="text-xs text-textMuted">{subject.subjectCode}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className="text-xs text-textMuted">{subject.totalMarks.toFixed(0)}</span>
+                                                            <span className="text-base font-bold text-white ml-1">{subject.maxTotalMarks}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Internal Display */}
+                                                    <div className="flex justify-between text-sm mb-3 pb-3 border-b border-border">
+                                                        <span className="text-textMuted">Internal</span>
+                                                        <span className="text-white">{subject.totalMarks.toFixed(2)} / {subject.maxTotalMarks}</span>
+                                                    </div>
+
+                                                    {/* Grade Selector */}
+                                                    <div className="mb-3">
+                                                        <div className="flex justify-between text-[10px] text-textMuted mb-1">
+                                                            {['C', 'B', 'B+', 'A', 'A+', 'O'].map((g) => (
+                                                                <span
+                                                                    key={g}
+                                                                    className={`cursor-pointer ${targetGrade === g ? gradeInfo.color + ' font-bold' : ''}`}
+                                                                    onClick={() => setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: g }))}
+                                                                >
+                                                                    {g}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        <input
+                                                            type="range"
+                                                            min="0"
+                                                            max="5"
+                                                            value={['C', 'B', 'B+', 'A', 'A+', 'O'].indexOf(targetGrade)}
+                                                            onChange={(e) => {
+                                                                const grades = ['C', 'B', 'B+', 'A', 'A+', 'O'];
+                                                                setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: grades[parseInt(e.target.value)] }));
+                                                            }}
+                                                            className="w-full h-1.5 bg-surfaceHighlight rounded-full appearance-none cursor-pointer slider-thumb"
+                                                        />
+                                                    </div>
+
+                                                    {/* Goal for End Sem */}
+                                                    <div className="flex justify-between items-center p-2.5 rounded-lg bg-background border border-border">
+                                                        <span className="text-sm text-textMuted">Goal end sem</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`font-bold ${isPossible ? 'text-white' : 'text-red-400'}`}>
+                                                                {requiredEndSem.toFixed(0)}
+                                                            </span>
+                                                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${isPossible ? gradeInfo.bg + ' text-white' : 'bg-red-600 text-white'
+                                                                }`}>
+                                                                {isPossible ? '100' : '!'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Desktop: Grid */}
+                                {subjectsWithMarks.map((subject, i) => {
+                                    const targetGrade = targetGrades[subject.subjectCode] || 'A';
+                                    const requiredEndSem = calculateRequiredEndSem(subject.totalMarks, targetGrade);
+                                    const maxEndSem = department === 'ENT' ? 75 : 100;
+                                    const isPossible = requiredEndSem <= maxEndSem;
+                                    const gradeInfo = GRADES.find(g => g.grade === targetGrade) || GRADES[2];
+
+                                    return (
+                                        <div
+                                            key={`grade-desktop-${subject.subjectCode}-${i}`}
+                                            className="group relative bg-[#09090b] border border-white/5 rounded-2xl p-5 hover:border-primary/20 transition-all duration-300 hover:shadow-[0_0_30px_rgba(79,70,229,0.1)] overflow-hidden"
+                                        >
+                                            {/* Card Gradient */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
+
+                                            {/* Header */}
+                                            <div className="relative flex justify-between items-start mb-4">
+                                                <div className="flex-1 min-w-0 mr-4">
+                                                    <h3 className="font-medium text-white text-sm truncate leading-snug tracking-wide">
+                                                        {subject.subjectName}
+                                                    </h3>
+                                                    <p className="text-[11px] text-white/40 mt-0.5 font-mono">{subject.subjectCode}</p>
+                                                </div>
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-2xl font-bold text-white tracking-tighter">{subject.totalMarks.toFixed(1)}</span>
+                                                    <span className="text-[10px] text-white/40 uppercase tracking-wider font-semibold">Internal</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Grade Selector */}
+                                            <div className="mb-4 relative">
+                                                <div className="flex justify-between text-[10px] font-medium text-white/40 mb-2 px-1">
+                                                    {['C', 'B', 'B+', 'A', 'A+', 'O'].map((g) => (
+                                                        <span
+                                                            key={g}
+                                                            className={`cursor-pointer transition-colors hover:text-white ${targetGrade === g ? gradeInfo.color + ' opacity-100 scale-110' : ''}`}
+                                                            onClick={() => setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: g }))}
+                                                        >
+                                                            {g}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                                <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="5"
+                                                        value={['C', 'B', 'B+', 'A', 'A+', 'O'].indexOf(targetGrade)}
+                                                        onChange={(e) => {
+                                                            const grades = ['C', 'B', 'B+', 'A', 'A+', 'O'];
+                                                            setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: grades[parseInt(e.target.value)] }));
+                                                        }}
+                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                    />
+                                                    <div
+                                                        className={`absolute top-0 left-0 h-full transition-all duration-300 ${gradeInfo.bg} shadow-[0_0_15px_currentColor]`}
+                                                        style={{ width: `${(['C', 'B', 'B+', 'A', 'A+', 'O'].indexOf(targetGrade) / 5) * 100}%` }}
+                                                    />
+                                                    <div
+                                                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg pointer-events-none transition-all duration-300"
+                                                        style={{ left: `calc(${(['C', 'B', 'B+', 'A', 'A+', 'O'].indexOf(targetGrade) / 5) * 100}% - 8px)` }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Goal for End Sem */}
+                                            <div className="flex justify-between items-center p-3 rounded-xl bg-white/[0.03] border border-white/5 group-hover:bg-white/[0.05] transition-colors">
+                                                <span className="text-xs text-white/60 font-medium">Goal end sem</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-lg font-bold tracking-tight ${isPossible ? 'text-white' : 'text-red-400'}`}>
+                                                        {requiredEndSem.toFixed(0)}
+                                                    </span>
+                                                    <span className="text-[10px] text-white/30">/ {maxEndSem}</span>
+                                                </div>
+                                            </div>
+
+                                            {!isPossible && (
+                                                <div className="mt-2 text-center relative">
+                                                    <div className="absolute inset-0 bg-red-500/10 blur-xl pointer-events-none" />
+                                                    <p className="text-[10px] text-red-400 font-medium relative z-10">
+                                                        Impossible to achieve
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            </div>
+                ) : (
+                <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
+                    <p className="text-textMuted mb-6">No marks data. Fetch marks first to use Grade Predictor.</p>
+                    <button onClick={() => setActiveTab('marks')} className="bg-[#EEEEF0] text-black px-6 py-3 rounded-full font-medium hover:bg-white transition-colors">
+                        Go to Marks →
+                    </button>
+                </div>
+                        )}
+        </div>
+    )
+}
+            </main >
+
+    {/* Mobile Tab Bar */ }
+    < div className = "md:hidden fixed bottom-0 left-0 right-0 z-50 glass-nav border-t border-border" >
+        <div className="flex justify-around py-2">
+            {(['attendance', 'marks', 'grades'] as Tab[]).map((tab) => (
+                <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`flex-1 py-3 text-sm font-medium transition-all ${activeTab === tab ? 'text-white' : 'text-textMuted'}`}
+                >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+            ))}
+        </div>
+            </div >
+        </div >
+    );
+}
+
+// Subject Card for Attendance
+function SubjectCard({ record }: { record: AttendanceRecord; department: string }) {
+    const isSafe = record.percentage >= 75;
+
+    const calculateCanMiss = () => {
+        const { attendedHours, totalHours } = record;
+        if (!totalHours || !attendedHours) return 0;
+        return Math.max(0, Math.floor((attendedHours - 0.75 * totalHours) / 0.75));
+    };
+
+    const calculateNeedToAttend = () => {
+        const { attendedHours, totalHours } = record;
+        if (!totalHours || !attendedHours) return 0;
+        return Math.max(0, Math.ceil((0.75 * totalHours - attendedHours) / 0.25));
+    };
+
+    return (
+        <div className="group relative p-5 bg-[#09090b] border border-white/5 rounded-2xl hover:border-white/10 transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,0,0,0.4)] overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
+
+            <div className="relative flex justify-between items-start mb-5">
+                <div className="flex-1 min-w-0 mr-4">
+                    <h3 className="font-medium text-white text-base truncate leading-snug tracking-wide">{record.subjectName}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                        <span className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/5 text-[10px] text-white/50 font-mono tracking-wider">
+                            {record.subjectCode}
+                        </span>
+                        {record.category && (
+                            <span className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/5 text-[10px] text-white/40">
+                                {record.category}
+                            </span>
+                        )}
                     </div>
-                )}
-            </main>
+                </div>
+                <div className="text-right">
+                    <div className="text-3xl font-bold tracking-tighter text-white">
+                        {record.percentage?.toFixed(0)}%
+                    </div>
+                </div>
+            </div>
+
+            <div className="relative w-full h-2 bg-white/5 rounded-full overflow-hidden mb-4">
+                <div
+                    className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${isSafe ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' : 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.4)]'}`}
+                    style={{ width: `${Math.min(100, record.percentage)}%` }}
+                ></div>
+                {/* 75% Marker */}
+                <div className="absolute top-0 bottom-0 w-0.5 bg-white/20 z-10" style={{ left: '75%' }}></div>
+            </div>
+
+            <div className="flex justify-between items-end">
+                <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-wider text-white/30 font-semibold mb-0.5">Status</span>
+                    <span className="text-sm text-textMuted font-medium">
+                        <span className="text-white">{record.attendedHours}</span> <span className="text-white/30">/</span> {record.totalHours} hrs
+                    </span>
+                </div>
+                <div className={`px-3 py-1.5 rounded-lg border ${isSafe ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                    <span className="text-xs font-bold whitespace-nowrap">
+                        {isSafe ? `${calculateCanMiss()} can miss` : `${calculateNeedToAttend()} needed`}
+                    </span>
+                </div>
+            </div>
         </div>
     );
 }
 
-// Attendance Row Component
-function AttendanceRow({ record }: { record: AttendanceRecord }) {
-    const total = record.totalHours || 0;
-    const attended = record.attendedHours || 0;
-    const buffer = attended - (0.75 * total);
-    const margin = buffer >= 0 ? Math.floor(buffer) : Math.ceil(buffer);
-    const isGood = record.percentage >= 75;
-
-    return (
-        <div className={styles.attendanceRow}>
-            <div className={styles.rowSubject}>
-                <span className={styles.rowCode}>{record.subjectCode}</span>
-                <span className={styles.rowName}>{record.subjectName}</span>
-            </div>
-            <div className={styles.rowMargin} style={{ color: isGood ? '#22c55e' : '#ef4444' }}>
-                {margin >= 0 ? `+${margin}` : margin}
-            </div>
-            <div className={styles.rowHours}>
-                <span className={styles.hoursPresent}>{attended}</span>
-                <span className={styles.hoursDivider}>/</span>
-                <span className={styles.hoursTotal}>{total}</span>
-            </div>
-            <div className={styles.rowPct} style={{ color: isGood ? '#22c55e' : record.percentage >= 70 ? '#f59e0b' : '#ef4444' }}>
-                {record.percentage}%
-            </div>
-        </div>
-    );
-}
-
-// Marks Card Component
+// Marks Card
 function MarksCard({ subject }: { subject: SubjectMarks }) {
-    const percentage = subject.maxTotalMarks > 0
-        ? Math.round((subject.totalMarks / subject.maxTotalMarks) * 100)
-        : 0;
+    const percentage = subject.maxTotalMarks > 0 ? (subject.totalMarks / subject.maxTotalMarks) * 100 : 0;
+
+    const getColor = (pct: number) => {
+        if (pct >= 80) return 'text-emerald-400';
+        if (pct >= 60) return 'text-yellow-400';
+        if (pct >= 40) return 'text-orange-400';
+        return 'text-red-400';
+    };
+
+    const getGlowColor = (pct: number) => {
+        if (pct >= 80) return 'shadow-[0_0_12px_rgba(52,211,153,0.4)] bg-emerald-500';
+        if (pct >= 60) return 'shadow-[0_0_12px_rgba(250,204,21,0.4)] bg-yellow-500';
+        if (pct >= 40) return 'shadow-[0_0_12px_rgba(251,146,60,0.4)] bg-orange-500';
+        return 'shadow-[0_0_12px_rgba(248,113,113,0.4)] bg-red-500';
+    };
 
     return (
-        <div className={styles.marksCard}>
-            <div className={styles.marksHeader}>
-                <span className={styles.marksSubject}>{subject.subjectName}</span>
-                <span className={styles.marksCode}>{subject.subjectCode}</span>
+        <div className="group relative p-5 bg-[#09090b] border border-white/5 rounded-2xl hover:border-white/10 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,0,0,0.4)] overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
+
+            <div className="relative flex justify-between items-start mb-5">
+                <div className="flex-1 min-w-0 mr-4">
+                    <h3 className="font-medium text-white text-base truncate leading-snug tracking-wide">{subject.subjectName}</h3>
+                    <p className="text-[11px] text-white/40 mt-0.5 font-mono">{subject.subjectCode}</p>
+                </div>
+                <div className="text-right">
+                    <div className={`text-3xl font-bold tracking-tighter ${getColor(percentage)}`}>
+                        {percentage.toFixed(0)}%
+                    </div>
+                </div>
             </div>
-            <div className={styles.marksScore}>
-                <span className={styles.marksObtained}>{subject.totalMarks}</span>
-                <span className={styles.marksMax}>/ {subject.maxTotalMarks}</span>
+
+            <div className="relative w-full h-2 bg-white/5 rounded-full overflow-hidden mb-5">
+                <div
+                    className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${getGlowColor(percentage)}`}
+                    style={{ width: `${Math.min(100, percentage)}%` }}
+                ></div>
             </div>
-            <div className={styles.marksBar}>
-                <div className={styles.marksBarFill} style={{
-                    width: `${percentage}%`,
-                    background: percentage >= 80 ? '#22c55e' : percentage >= 60 ? '#f59e0b' : '#ef4444'
-                }}></div>
+
+            <div className="flex justify-between items-end border-t border-white/5 pt-4">
+                <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-wider text-white/30 font-semibold mb-0.5">Scored</span>
+                    <span className="text-lg font-bold text-white tracking-tight">
+                        {subject.totalMarks.toFixed(1)}
+                    </span>
+                </div>
+                <div className="flex flex-col items-end">
+                    <span className="text-[10px] uppercase tracking-wider text-white/30 font-semibold mb-0.5">Total</span>
+                    <span className="text-lg font-medium text-white/60">
+                        / {subject.maxTotalMarks}
+                    </span>
+                </div>
             </div>
-            <div className={styles.marksPercent}>{percentage}%</div>
         </div>
     );
 }
+

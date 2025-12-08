@@ -2,26 +2,26 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SRM Attend",
-  description: "Track your SRM attendance easily",
+  title: "AttendX - Smart Attendance Tracking",
+  description: "Track your SRM attendance in real-time. Calculate margins, predict grades, and never miss a crucial class again.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Attend",
+    title: "AttendX",
   },
   icons: {
-    icon: "/icons/icon-192.png",
-    apple: "/icons/icon-192.png",
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#10b981",
+  themeColor: "#5E6AD2",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({

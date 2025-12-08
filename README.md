@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SRM Attendance Web
+
+A modern, responsive web application designed for SRM Institute of Science and Technology students to track their attendance and academic performance. This project provides a user-friendly dashboard to view attendance records, internal marks, and predict future grades based on current performance.
+
+## Features
+
+*   **Attendance Tracking:** Real-time synchronization of attendance data from the university portal.
+*   **Internal Marks:** view detailed internal assessment scores.
+*   **Grade Prediction:** Interactive tool to calculate required scores for desired grades.
+*   **Dark Mode UI:** A premium, "Linear-style" dark interface with glassmorphism effects.
+*   **Mobile Responsive:** Fully optimized for mobile devices with touch-friendly interactions.
+*   **Privacy Focused:** No student credentials are stored on the server. Data is handled locally or via secure session logic.
+
+## Tech Stack
+
+*   **Framework:** Next.js (React)
+*   **Language:** TypeScript
+*   **Styling:** Tailwind CSS
+*   **Automation:** Puppeteer (for scraping)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+*   Node.js (v18 or higher)
+*   npm
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/milind899/srm-attendance-web.git
+    cd srm-attendance-web
+    ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
 
-## Learn More
+3.  Run the development server:
+    ```bash
+    npm run dev
+    ```
 
-To learn more about Next.js, take a look at the following resources:
+4.  Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scraper Information
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This application uses Puppeteer to scrape data from the SRM student portal.
+*   **ENT Scraper:** Handles scraping for Engineering & Technology students.
+*   **FSH Scraper:** Handles scraping for Science & Humanities students (includes specific logic for frame handling).
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)**.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**You are free to:**
+*   **Share** — copy and redistribute the material in any medium or format.
+*   **Adapt** — remix, transform, and build upon the material.
+
+**Under the following terms:**
+*   **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+*   **NonCommercial** — You may not use the material for commercial purposes.
+
+See the [LICENSE](LICENSE) file for details.
+
+## Disclaimer
+
+This is a student-developed project and is not officially affiliated with SRM Institute of Science and Technology. Use it at your own discretion.

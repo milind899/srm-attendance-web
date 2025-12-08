@@ -1,6 +1,7 @@
 export interface AttendanceRecord {
     subjectName: string;
     subjectCode: string;
+    category?: string; // 'Theory' or 'Practical'
     totalHours: number;
     attendedHours: number;
     percentage: number;
@@ -40,6 +41,7 @@ export interface InternalMarksData {
 export interface ScraperResult {
     success: boolean;
     data?: AttendanceData;
+    internalMarks?: InternalMarksData; // Added for ENT separate marks
     error?: string;
     captchaNeeded?: boolean;
     captchaImage?: string;
