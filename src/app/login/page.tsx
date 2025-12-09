@@ -97,7 +97,7 @@ function LoginForm() {
     };
 
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-y-auto">
 
             {/* Background Effects */}
             <div className="absolute inset-0 bg-dot-grid opacity-20 pointer-events-none" />
@@ -148,7 +148,7 @@ function LoginForm() {
                     )}
                 </div>
 
-                {/* Form Area */}
+                {/* Form Area - Now inside the card */}
                 <div className="p-6 sm:p-8 pt-2 sm:pt-4">
                     {error && (
                         <div className="mb-6 p-3 rounded bg-red-500/10 border border-red-500/20 text-red-200 text-xs flex items-center gap-2">
@@ -243,7 +243,6 @@ function LoginForm() {
                 </Link>
             </div>
         </div>
-
     );
 }
 
