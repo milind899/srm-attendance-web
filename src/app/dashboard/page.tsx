@@ -1,13 +1,3 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { AttendanceData, AttendanceRecord, InternalMarksData, SubjectMarks } from '@/lib/types';
-import { DecryptText } from '@/components/DecryptText';
-import { Loader2 } from 'lucide-react';
-
-type Tab = 'attendance' | 'marks' | 'grades';
 
 // Grade thresholds for 100-based total
 const GRADES = [
@@ -538,6 +528,7 @@ export default function Dashboard() {
                 </p>
             </footer>
 
+            <InstallPrompt />
         </div>
     );
 }
