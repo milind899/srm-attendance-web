@@ -129,110 +129,121 @@ function LoginForm() {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => router.push('/login?dept=ENT')}
-                                className={`flex-1 py-2.5 text-sm font-medium rounded-md transition-all ${dept === 'ENT' ? 'bg-primary text-white' : 'text-textMuted hover:text-white'}`}
+                                disabled
+                                className="flex-1 py-2.5 text-sm font-medium rounded-md transition-all text-white/20 cursor-not-allowed flex items-center justify-center gap-2"
+                                title="Under Development"
                             >
                                 ENT Portal
+                                <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded border border-yellow-500/20">Dev</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* Form Area */}
-                    <div className="p-6 sm:p-8 pt-2 sm:pt-4">
-                        {error && (
-                            <div className="mb-6 p-3 rounded bg-red-500/10 border border-red-500/20 text-red-200 text-xs flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                                {error}
+                    {/* Maintenance Notice for ENT */}
+                    {dept === 'ENT' && (
+                        <div className="mx-6 sm:mx-8 mb-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-200 text-xs flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></div>
+                            ENT Portal is currently under development.
+                        </div>
+                    )}
+                </div>
+
+                {/* Form Area */}
+                <div className="p-6 sm:p-8 pt-2 sm:pt-4">
+                    {error && (
+                        <div className="mb-6 p-3 rounded bg-red-500/10 border border-red-500/20 text-red-200 text-xs flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                            {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="space-y-1.5">
+                            <label className="text-xs uppercase tracking-wider font-medium text-textMuted ml-1">
+                                {dept === 'ENT' ? 'Email Address' : "NetID (without '@srmist.edu.in')"}
+                            </label>
+                            <input
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="w-full bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-700 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
+                                placeholder={dept === 'ENT' ? "student@srmist.edu.in" : "NetID"}
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-xs uppercase tracking-wider font-medium text-textMuted ml-1">Password</label>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-700 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted hover:text-white transition-colors"
+                                >
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {dept === 'FSH' && (
+                            <div className="space-y-1.5">
+                                <label className="text-xs uppercase tracking-wider font-medium text-textMuted ml-1">Security Check</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={captchaVal}
+                                        onChange={(e) => setCaptchaVal(e.target.value)}
+                                        className="flex-1 bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
+                                        placeholder="Enter code"
+                                        required
+                                    />
+                                    <div className="relative group">
+                                        {captchaImg ? (
+                                            <div
+                                                className="h-[46px] px-2 bg-white rounded-lg flex items-center cursor-pointer opacity-90 hover:opacity-100 transition-opacity border-2 border-transparent hover:border-primary/50"
+                                                onClick={fetchCaptcha}
+                                                title="Click to refresh"
+                                            >
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={captchaImg} alt="Captcha" className="h-full object-contain" />
+                                            </div>
+                                        ) : (
+                                            <div className="h-[46px] w-24 bg-white/5 rounded-lg flex items-center justify-center animate-pulse">
+                                                <Loader2 className="w-4 h-4 text-textMuted animate-spin" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            <div className="space-y-1.5">
-                                <label className="text-xs uppercase tracking-wider font-medium text-textMuted ml-1">
-                                    {dept === 'ENT' ? 'Email Address' : "NetID (without '@srmist.edu.in')"}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-700 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
-                                    placeholder={dept === 'ENT' ? "student@srmist.edu.in" : "NetID"}
-                                    required
-                                />
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-xs uppercase tracking-wider font-medium text-textMuted ml-1">Password</label>
-                                <div className="relative">
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-700 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
-                                        placeholder="••••••••"
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted hover:text-white transition-colors"
-                                    >
-                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {dept === 'FSH' && (
-                                <div className="space-y-1.5">
-                                    <label className="text-xs uppercase tracking-wider font-medium text-textMuted ml-1">Security Check</label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={captchaVal}
-                                            onChange={(e) => setCaptchaVal(e.target.value)}
-                                            className="flex-1 bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
-                                            placeholder="Enter code"
-                                            required
-                                        />
-                                        <div className="relative group">
-                                            {captchaImg ? (
-                                                <div
-                                                    className="h-[46px] px-2 bg-white rounded-lg flex items-center cursor-pointer opacity-90 hover:opacity-100 transition-opacity border-2 border-transparent hover:border-primary/50"
-                                                    onClick={fetchCaptcha}
-                                                    title="Click to refresh"
-                                                >
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img src={captchaImg} alt="Captcha" className="h-full object-contain" />
-                                                </div>
-                                            ) : (
-                                                <div className="h-[46px] w-24 bg-white/5 rounded-lg flex items-center justify-center animate-pulse">
-                                                    <Loader2 className="w-4 h-4 text-textMuted animate-spin" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 rounded-lg transition-all shadow-[0_0_20px_rgba(94,106,210,0.3)] hover:shadow-[0_0_25px_rgba(94,106,210,0.5)] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {loading ? <Loader2 className="animate-spin w-4 h-4" /> : 'Sign In'}
-                                {!loading && <ArrowRight size={16} />}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <div className="mt-8 text-center relative z-50">
-                    <Link href="/" className="inline-block px-4 py-2 text-sm text-textMuted hover:text-white transition-colors">
-                        ← Back to home
-                    </Link>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 rounded-lg transition-all shadow-[0_0_20px_rgba(94,106,210,0.3)] hover:shadow-[0_0_25px_rgba(94,106,210,0.5)] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {loading ? <Loader2 className="animate-spin w-4 h-4" /> : 'Sign In'}
+                            {!loading && <ArrowRight size={16} />}
+                        </button>
+                    </form>
                 </div>
             </div>
+
+            <div className="mt-8 text-center relative z-50">
+                <Link href="/" className="inline-block px-4 py-2 text-sm text-textMuted hover:text-white transition-colors">
+                    ← Back to home
+                </Link>
+            </div>
         </div>
+        </div >
     );
 }
 
