@@ -4,8 +4,37 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AttendX - Smart Attendance Tracking",
-  description: "Track your SRM attendance in real-time. Calculate margins, predict grades, and never miss a crucial class again.",
+  metadataBase: new URL('https://attendx-srm.vercel.app'),
+  title: {
+    default: "AttendX - Smart Attendance Tracking for SRM",
+    template: "%s | AttendX"
+  },
+  description: "The ultimate attendance companion for SRMites. Track real-time attendance, calculate margins, predict grades, and manage your academic life effortlessly.",
+  keywords: ["SRM Attendance", "AttendX", "SRMIST", "Academia", "Grade Predictor", "SRM Student Portal", "Attendance Tracker", "SRM Marks"],
+  authors: [{ name: "AttendX Team" }],
+  creator: "AttendX",
+  openGraph: {
+    title: "AttendX - Smart Attendance Tracking",
+    description: "Track your SRM attendance in real-time. Calculate margins, predict grades, and never miss a crucial class again.",
+    url: 'https://attendx-srm.vercel.app',
+    siteName: 'AttendX',
+    locale: 'en_US',
+    type: 'website',
+    images: [
+      {
+        url: '/logo.png',
+        width: 512,
+        height: 512,
+        alt: 'AttendX Logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary',
+    title: "AttendX - Smart Attendance Tracking",
+    description: "Track your SRM attendance in real-time. Calculate margins and predict grades.",
+    images: ['/logo.png'],
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

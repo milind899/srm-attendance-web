@@ -457,7 +457,8 @@ export default function Dashboard() {
                                                             </div>
                                                             <div className="text-right">
                                                                 <span className="text-xs text-textMuted">{subject.totalMarks.toFixed(0)}</span>
-                                                                <span className="text-base font-bold text-white ml-1">{subject.maxTotalMarks}</span>
+                                                                <span className="text-textMuted/50 mx-1">/</span>
+                                                                <span className="text-base font-bold text-white">{subject.maxTotalMarks}</span>
                                                             </div>
                                                         </div>
 
