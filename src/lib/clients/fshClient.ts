@@ -180,6 +180,44 @@ export class FshClient {
                     if (!code || code.toLowerCase().includes('code') || code.toLowerCase() === 'total') return;
 
                     const name = $(cols[1]).text().trim();
+                    const maxHours = parseFloat($(cols[2]).text().trim()) || 0;
+                    const attHours = parseFloat($(cols[3]).text().trim()) || 0;
+
+                    let pct = 0;
+                    if (maxHours > 0) {
+                        pct = (attHours / maxHours) * 100;
+                    } else {
+                        // Fallback: search columns starting from index 5 to avoid Absent Hours (index 4)
+                        const possibleIndices = [5, 6, 7, 8];
+                        for (const idx of possibleIndices) {
+                            if (cols.length > idx) {
+                                const valText = $(cols[idx]).text().trim().replace('%', '');
+                                const val = parseFloat(valText);
+                                if (!isNaN(val) && val >= 0 && val <= 100) {
+                                    pct = val;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Sanity check
+                    if (pct === 0 && attHours > 0) {
+                        pct = (attHours / maxHours) * 100;
+                    }
+
+                    currentTableData.push({
+                        subjectCode: code,
+                        subjectName: name,
+                        totalHours: maxHours,
+                        attendedHours: attHours,
+                        percentage: Math.round(pct * 100) / 100
+                    });
+                });
+
+                if (currentTableData.length > 0) {
+                    data.push(...currentTableData);
+                    return false; // Break cheerio loop
                 }
             }
         });
