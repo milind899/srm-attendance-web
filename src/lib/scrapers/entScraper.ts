@@ -201,7 +201,7 @@ export async function scrapeEntAttendance(username: string, password: string): P
                         await frame.evaluateHandle(() => {
                             const elements = Array.from(document.querySelectorAll('a, div, span'));
                             return elements.find(el => {
-                                const text = el.innerText?.toLowerCase() || '';
+                                const text = (el as HTMLElement).innerText?.toLowerCase() || '';
                                 return text.includes('attendance') && !text.includes('mark') && text.length < 30; // Avoid "Internal Marks" link
                             });
                         });
