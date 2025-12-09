@@ -290,11 +290,10 @@ export default function Dashboard() {
                                 ? 'border-green-500/30 bg-green-500/10 text-green-400'
                                 : 'border-red-500/30 bg-red-500/10 text-red-400'
                                 }`}>
-                                <span className="text-lg font-bold">
-                                    {overallPercentage >= 75 ? Math.max(0, overallCanMiss) : Math.max(0, overallNeedToAttend)}
-                                </span>
-                                <span className="text-xs">
-                                    {overallPercentage >= 75 ? 'can skip' : 'need'}
+                                <span className="text-sm font-bold">
+                                    {overallPercentage >= 75
+                                        ? `Can miss ${Math.max(0, overallCanMiss)} classes`
+                                        : `Need to attend ${Math.max(0, overallNeedToAttend)} classes`}
                                 </span>
                             </div>
                         </div>

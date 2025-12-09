@@ -180,38 +180,6 @@ export class FshClient {
                     if (!code || code.toLowerCase().includes('code') || code.toLowerCase() === 'total') return;
 
                     const name = $(cols[1]).text().trim();
-                    const maxHours = parseFloat($(cols[2]).text().trim()) || 0;
-                    const attHours = parseFloat($(cols[3]).text().trim()) || 0;
-
-                    let pct = NaN;
-
-                    // Try to find percentage in common columns
-                    const possibleIndices = [4, 5, 6, 7, 8];
-                    for (const idx of possibleIndices) {
-                        if (cols.length > idx) {
-                            const valText = $(cols[idx]).text().trim().replace('%', '');
-                            const val = parseFloat(valText);
-                            if (!isNaN(val) && val >= 0 && val <= 100) {
-                                pct = val;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (isNaN(pct)) return;
-
-                    currentTableData.push({
-                        subjectCode: code,
-                        subjectName: name,
-                        totalHours: maxHours,
-                        attendedHours: attHours,
-                        percentage: Math.round(pct * 100) / 100
-                    });
-                });
-
-                if (currentTableData.length > 0) {
-                    data.push(...currentTableData);
-                    return false; // Break cheerio loop
                 }
             }
         });
