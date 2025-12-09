@@ -148,13 +148,15 @@ function LoginForm() {
 
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div className="space-y-1.5">
-                                <label className="text-xs uppercase tracking-wider font-medium text-textMuted ml-1">Username / Reg No.</label>
+                                <label className="text-xs uppercase tracking-wider font-medium text-textMuted ml-1">
+                                    {dept === 'ENT' ? 'Email Address' : "NetID (without '@srmist.edu.in')"}
+                                </label>
                                 <input
                                     type="text"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
                                     className="w-full bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-700 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
-                                    placeholder="RA21..."
+                                    placeholder={dept === 'ENT' ? "student@srmist.edu.in" : "NetID"}
                                     required
                                 />
                             </div>
