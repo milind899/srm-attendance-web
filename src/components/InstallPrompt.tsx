@@ -65,8 +65,8 @@ export function InstallPrompt() {
     if (!isVisible) return null;
 
     return (
-        <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-10 fade-in duration-500">
-            <div className="bg-[#09090b]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+        <div className="fixed top-4 left-4 right-4 z-[100] animate-in slide-in-from-top-4 fade-in duration-500">
+            <div className="bg-[#09090b]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                 <div className="flex justify-between items-start mb-3">
                     <div className="flex gap-3">
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-0.5 shadow-lg">
