@@ -168,12 +168,14 @@ export async function scrapeEntAttendance(username: string, password: string): P
         // Helper to check for tables
         const waitForTable = async () => {
             const start = Date.now();
-            while (Date.now() - start < 15000) {
+            while (Date.now() - start < 20000) { // Increased to 20s
                 let tableCount = 0;
                 if (!page) return false;
-                for (const frame of page.frames()) {
-                    tableCount += await frame.evaluate(() => document.querySelectorAll('table').length);
-                }
+                try {
+                    for (const frame of page.frames()) {
+                        tableCount += await frame.evaluate(() => document.querySelectorAll('table').length);
+                    }
+                } catch (e) { } // Ignore frame detached errors
                 if (tableCount > 0) return true;
                 await new Promise(r => setTimeout(r, 500));
             }
@@ -187,29 +189,45 @@ export async function scrapeEntAttendance(username: string, password: string): P
             console.log('[ENT] Table not found via hash, trying menu click...');
             const frames = page.frames();
             let clicked = false;
-            for (const frame of frames) {
-                const link = await frame.$('a[href*="My_Attendance"], a:contains("Attendance")') ||
-                    await frame.evaluateHandle(() => {
-                        const links = Array.from(document.querySelectorAll('a'));
-                        return links.find(l => l.innerText.includes('Attendance') || l.href.includes('My_Attendance'));
-                    });
 
-                if (link) {
-                    const handle = link as any;
-                    if (typeof handle.click === 'function') {
-                        console.log('[ENT] Clicking attendance link in frame:', frame.name());
-                        try {
+            // Log frame names for debug
+            // frames.forEach(f => console.log(`[ENT] Frame: ${f.name()} | ${f.url()}`));
+
+            for (const frame of frames) {
+                try {
+                    // Try exact matches first, then fuzzy
+                    const link = await frame.$('a[href*="My_Attendance"]') ||
+                        await frame.$('div[onclick*="My_Attendance"]') ||
+                        await frame.evaluateHandle(() => {
+                            const elements = Array.from(document.querySelectorAll('a, div, span'));
+                            return elements.find(el => {
+                                const text = el.innerText?.toLowerCase() || '';
+                                return text.includes('attendance') && !text.includes('mark') && text.length < 30; // Avoid "Internal Marks" link
+                            });
+                        });
+
+                    if (link) {
+                        const handle = link as any;
+                        if (handle) {
+                            console.log('[ENT] Clicking attendance link in frame:', frame.name());
                             await handle.click();
                             clicked = true;
+                            // Wait for click effect
+                            await new Promise(r => setTimeout(r, 2000));
                             break;
-                        } catch (e) { }
+                        }
                     }
+                } catch (e) {
+                    console.log(`[ENT] Error checking frame ${frame.name()}:`, e);
                 }
             }
 
             if (clicked) {
-                await new Promise(r => setTimeout(r, 5000));
+                console.log('[ENT] Link clicked, waiting for table load...');
+                await new Promise(r => setTimeout(r, 5000)); // Wait for iframe reload
                 await waitForTable();
+            } else {
+                console.log('[ENT] Failed to find Attendance link. Will scan whatever is present.');
             }
         }
 
@@ -225,7 +243,13 @@ export async function scrapeEntAttendance(username: string, password: string): P
 
                     for (const t of tables) {
                         const fullText = t.innerText.toLowerCase();
-                        if (!fullText.includes('code') || (!fullText.includes('attn') && !fullText.includes('max') && !fullText.includes('hours'))) continue;
+                        // Relaxed check: Look for 'code' AND ('attendance' OR 'total' OR 'percentage' OR 'max')
+                        // Some tables use 'Attn', some 'Attendance', some just 'Hours'
+                        const looksLikeAttendance =
+                            (fullText.includes('code') && (fullText.includes('attn') || fullText.includes('percent') || fullText.includes('total') || fullText.includes('max') || fullText.includes('hours'))) ||
+                            (fullText.includes('subject') && fullText.includes('conducted') && fullText.includes('present')); // Backup pattern
+
+                        if (!looksLikeAttendance) continue;
 
                         const rows = Array.from((t as HTMLTableElement).rows);
                         if (rows.length < 2) continue;
