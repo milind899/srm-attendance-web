@@ -80,40 +80,28 @@ export class FshClient {
                     const $ = cheerio.load(loginResp.data);
                     const errorMsg = $('.alert-danger').text().trim() || 'Login failed (Invalid Credentials/Captcha)';
                     return { success: false, error: errorMsg };
+                    // If it's a 500 error from the portal, retry
+                    if (e.response?.status === 500 && attempt < maxRetries) {
+                        continue;
+                    }
+
+                    // If it's a network or timeout error, retry
+                    if ((e.code === 'ECONNRESET' || e.code === 'ETIMEDOUT' || e.message?.includes('timeout')) && attempt < maxRetries) {
+                        continue;
+                    }
+
+                    // Don't retry for other errors
+                    break;
                 }
-
-                const attendanceUrl = '/students/report/studentAttendanceDetails.jsp';
-                console.error('[FshClient] Fetching attendance page...');
-                const attResp = await this.client.get(attendanceUrl, { timeout: 15000 });
-
-                return this.parseAttendance(attResp.data, username);
-
-            } catch (e: any) {
-                lastError = e.message;
-                console.error(`[FshClient] Error (attempt ${attempt + 1}):`, e.message);
-
-                // If it's a 500 error from the portal, retry
-                if (e.response?.status === 500 && attempt < maxRetries) {
-                    continue;
-                }
-
-                // If it's a network or timeout error, retry
-                if ((e.code === 'ECONNRESET' || e.code === 'ETIMEDOUT' || e.message?.includes('timeout')) && attempt < maxRetries) {
-                    continue;
-                }
-
-                // Don't retry for other errors
-                break;
             }
-        }
 
         // Return a user-friendly error for portal issues
         if (lastError.includes('500') || lastError.includes('Request failed')) {
-            return { success: false, error: 'SRM Portal is temporarily unavailable. Please try again in a few moments.' };
-        }
+                return { success: false, error: 'SRM Portal is temporarily unavailable. Please try again in a few moments.' };
+            }
 
-        return { success: false, error: lastError || 'Login failed' };
-    }
+            return { success: false, error: lastError || 'Login failed' };
+        }
 
     public async fetchInternalMarks(cookieStr: string, username: string): Promise<InternalMarksResult> {
         console.error('[FshClient] fetchInternalMarks called');
