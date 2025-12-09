@@ -97,7 +97,7 @@ function LoginForm() {
     };
 
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-y-auto">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-y-auto">
 
             {/* Background Effects */}
             <div className="absolute inset-0 bg-dot-grid opacity-20 pointer-events-none" />
@@ -205,18 +205,18 @@ function LoginForm() {
                                         placeholder="Enter code"
                                         required
                                     />
-                                    <div className="relative group">
+                                    <div className="relative group flex-shrink-0">
                                         {captchaImg ? (
                                             <div
-                                                className="h-[46px] px-2 bg-white rounded-lg flex items-center cursor-pointer opacity-90 hover:opacity-100 transition-opacity border-2 border-transparent hover:border-primary/50"
+                                                className="h-[46px] w-[120px] px-2 bg-white rounded-lg flex items-center justify-center cursor-pointer opacity-90 hover:opacity-100 transition-opacity border-2 border-transparent hover:border-primary/50"
                                                 onClick={fetchCaptcha}
                                                 title="Click to refresh"
                                             >
                                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img src={captchaImg} alt="Captcha" className="h-full object-contain" />
+                                                <img src={captchaImg} alt="Captcha" className="h-full w-full object-contain" />
                                             </div>
                                         ) : (
-                                            <div className="h-[46px] w-24 bg-white/5 rounded-lg flex items-center justify-center animate-pulse">
+                                            <div className="h-[46px] w-[120px] bg-white/5 rounded-lg flex items-center justify-center animate-pulse">
                                                 <Loader2 className="w-4 h-4 text-textMuted animate-spin" />
                                             </div>
                                         )}
@@ -237,7 +237,7 @@ function LoginForm() {
                 </div>
             </div>
 
-            <div className="mt-8 text-center relative z-50">
+            <div className="mt-8 mb-4 text-center relative z-50">
                 <Link href="/" className="inline-block px-4 py-2 text-sm text-textMuted hover:text-white transition-colors">
                     ← Back to home
                 </Link>
