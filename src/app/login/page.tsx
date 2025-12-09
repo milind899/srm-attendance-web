@@ -243,7 +243,7 @@ function LoginForm() {
                 </Link>
             </div>
         </div>
-        </div >
+
     );
 }
 
