@@ -155,23 +155,21 @@ export default function Home() {
                   href={isLoggedIn ? '/dashboard' : '/login?dept=FSH'}
                   className="w-full sm:w-auto h-14 px-8 text-base bg-[#EEEEF0] text-black hover:bg-white border border-transparent shadow-[0_0_20px_rgba(255,255,255,0.1)] inline-flex items-center justify-center rounded-full font-semibold transition-all"
                 >
-                  {isLoggedIn ? 'Go to Dashboard' : 'FSH Portal'}
+                  FSH Portal
                   <ArrowRight size={18} className="ml-2" />
                 </Link>
                 <Link
                   href={isLoggedIn ? '/dashboard' : '/login?dept=ENT'}
                   className="relative w-full sm:w-auto h-14 px-8 text-base bg-transparent text-textMain border border-border hover:bg-surfaceHighlight hover:border-[#4B4E56] inline-flex items-center justify-center rounded-full font-semibold transition-all"
                 >
-                  {isLoggedIn ? 'Dashboard' : 'ENT Portal'}
-                  {!isLoggedIn && (
-                    <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-yellow-500/20 text-yellow-400 rounded-full border border-yellow-500/30">
-                      SOON
-                    </span>
-                  )}
+                  ENT Portal
+                  <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-yellow-500/20 text-yellow-400 rounded-full border border-yellow-500/30">
+                    SOON
+                  </span>
                   <ArrowRight size={18} className="ml-2" />
                 </Link>
               </div>
-              <p className="text-sm text-textMuted">{isLoggedIn ? 'Welcome back!' : 'Uses your SRM portal credentials'}</p>
+              <p className="text-sm text-textMuted">Uses your SRM portal credentials</p>
             </div>
 
             {/* Hero Image / Product Shot - Interactive Graph */}
