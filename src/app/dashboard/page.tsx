@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 import { AttendanceData, AttendanceRecord, InternalMarksData, SubjectMarks } from '@/lib/types';
 import { DecryptText } from '@/components/DecryptText';
-import { Loader2, Share2, BarChart3, Award, FileText } from 'lucide-react';
+import { Loader2, Share2, BarChart3, Award, FileText, RefreshCw } from 'lucide-react';
 import AttendanceCard from '@/components/AttendanceCard';
 
 type Tab = 'attendance' | 'marks' | 'grades';
@@ -40,12 +40,22 @@ export default function Dashboard() {
     // Share card state
     const [showShareCard, setShowShareCard] = useState(false);
 
+    // Refresh state
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
     useEffect(() => {
         document.documentElement.classList.add('dark');
 
         const stored = localStorage.getItem('attendanceData');
         const dept = localStorage.getItem('department') || 'ENT';
         setDepartment(dept);
+
+        // Load last updated timestamp
+        const timestamp = localStorage.getItem('lastUpdated');
+        if (timestamp) {
+            setLastUpdated(new Date(timestamp));
+        }
 
         // Load cached internal marks - but only if they match current department
         const cachedMarks = localStorage.getItem('internalMarksData');
@@ -122,6 +132,81 @@ export default function Dashboard() {
             setMarksError('Network error. Please try again.');
         } finally {
             setMarksLoading(false);
+        }
+    };
+
+    const handleRefresh = async () => {
+        const username = localStorage.getItem('username');
+        const password = localStorage.getItem('password');
+        const cookies = localStorage.getItem('sessionCookies');
+        const dept = localStorage.getItem('department') || 'ENT';
+
+        if (!username) {
+            setMarksError('Session expired. Redirecting to login...');
+            setTimeout(() => router.push(`/login?dept=${dept}`), 1500);
+            return;
+        }
+
+        setIsRefreshing(true);
+        setMarksError(null);
+
+        try {
+            // For FSH, we need cookies; for ENT, we need password
+            const requestBody: any = {
+                department: dept,
+                username
+            };
+
+            if (dept === 'FSH') {
+                if (!cookies) {
+                    throw new Error('Session expired');
+                }
+                // Re-use existing session for FSH
+                const csrf = localStorage.getItem('csrf');
+                requestBody.cookies = cookies;
+                requestBody.csrfToken = csrf;
+                requestBody.captcha = ''; // Not needed for refresh
+            } else {
+                // For ENT, password would be needed (but we don't store it)
+                throw new Error('Auto-refresh not supported for ENT portal. Please log in again.');
+            }
+
+            const response = await fetch('/api/attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                setData(result.data);
+                localStorage.setItem('attendanceData', JSON.stringify(result.data));
+
+                const now = new Date();
+                setLastUpdated(now);
+                localStorage.setItem('lastUpdated', now.toISOString());
+
+                // Also refresh marks for FSH
+                if (dept === 'FSH' && result.internalMarks) {
+                    setInternalMarks(result.internalMarks);
+                    localStorage.setItem('internalMarksData', JSON.stringify(result.internalMarks));
+                    localStorage.setItem('internalMarksDepartment', 'FSH');
+                }
+
+                // Show success (could add toast notification here)
+                console.log('Data refreshed successfully');
+            } else {
+                throw new Error(result.error || 'Failed to refresh data');
+            }
+        } catch (err: any) {
+            setMarksError(err.message || 'Failed to refresh. Please try logging in again.');
+            // If session expired, redirect to login after a short delay
+            if (err.message?.includes('expired') || err.message?.includes('Session')) {
+                setTimeout(() => router.push(`/login?dept=${dept}`), 2000);
+            }
+        } finally {
+            setIsRefreshing(false);
         }
     };
 
@@ -235,6 +320,16 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {/* Refresh Button */}
+                        <button
+                            onClick={handleRefresh}
+                            disabled={isRefreshing}
+                            className={`p-2 rounded-full bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isRefreshing ? 'animate-spin' : ''}`}
+                            title="Refresh Data"
+                        >
+                            <RefreshCw size={18} />
+                        </button>
+
                         {/* Share Button */}
                         <button
                             onClick={() => setShowShareCard(true)}
@@ -531,7 +626,7 @@ export default function Dashboard() {
             </main>
 
             {/* Footer / Disclaimer */}
-            <footer className="py-8 text-center opacity-60 hover:opacity-100 transition-opacity mb-20 md:mb-0">
+            <footer className="py-8 text-center opacity-60 hover:opacity-100 transition-opacity">
                 <p className="text-[10px] text-textMuted uppercase tracking-widest font-medium">
                     Disclaimer
                 </p>
@@ -539,44 +634,6 @@ export default function Dashboard() {
                     This site is under active development. Attendance and marks data may not be 100% accurate or up-to-date. Please verify on the official portal.
                 </p>
             </footer>
-
-            {/* Mobile Bottom Navigation */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-lg border-t border-border z-40 safe-area-inset-bottom">
-                <div className="flex items-center justify-around px-4 py-3">
-                    <button
-                        onClick={() => setActiveTab('attendance')}
-                        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${activeTab === 'attendance' ? 'text-primary' : 'text-textMuted'
-                            }`}
-                    >
-                        <BarChart3 size={22} strokeWidth={activeTab === 'attendance' ? 2.5 : 2} />
-                        <span className={`text-[10px] font-medium ${activeTab === 'attendance' ? 'font-bold' : ''}`}>
-                            Attendance
-                        </span>
-                    </button>
-
-                    <button
-                        onClick={() => setActiveTab('marks')}
-                        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${activeTab === 'marks' ? 'text-primary' : 'text-textMuted'
-                            }`}
-                    >
-                        <FileText size={22} strokeWidth={activeTab === 'marks' ? 2.5 : 2} />
-                        <span className={`text-[10px] font-medium ${activeTab === 'marks' ? 'font-bold' : ''}`}>
-                            Marks
-                        </span>
-                    </button>
-
-                    <button
-                        onClick={() => setActiveTab('grades')}
-                        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${activeTab === 'grades' ? 'text-primary' : 'text-textMuted'
-                            }`}
-                    >
-                        <Award size={22} strokeWidth={activeTab === 'grades' ? 2.5 : 2} />
-                        <span className={`text-[10px] font-medium ${activeTab === 'grades' ? 'font-bold' : ''}`}>
-                            What-If
-                        </span>
-                    </button>
-                </div>
-            </nav>
 
             {/* Share Card Modal */}
             {showShareCard && (
