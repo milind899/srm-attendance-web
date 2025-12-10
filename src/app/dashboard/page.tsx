@@ -44,6 +44,18 @@ export default function Dashboard() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+    // Toast notification state
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+    const showToastNotification = (message: string, type: 'success' | 'error' = 'success') => {
+        setToastMessage(message);
+        setToastType(type);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+    };
+
     useEffect(() => {
         document.documentElement.classList.add('dark');
 
@@ -194,12 +206,13 @@ export default function Dashboard() {
                     localStorage.setItem('internalMarksDepartment', 'FSH');
                 }
 
-                // Show success (could add toast notification here)
-                console.log('Data refreshed successfully');
+                // Show success toast
+                showToastNotification('Data refreshed successfully! ✓', 'success');
             } else {
                 throw new Error(result.error || 'Failed to refresh data');
             }
         } catch (err: any) {
+            showToastNotification(err.message || 'Failed to refresh. Please try logging in again.', 'error');
             setMarksError(err.message || 'Failed to refresh. Please try logging in again.');
             // If session expired, redirect to login after a short delay
             if (err.message?.includes('expired') || err.message?.includes('Session')) {
@@ -362,7 +375,7 @@ export default function Dashboard() {
             </nav>
 
             {/* Mobile Tab Bar - Top Sticky */}
-            <div className="md:hidden fixed top-16 left-0 right-0 z-40 bg-background border-b border-border px-4 py-3">
+            <div className="md:hidden fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border px-4 py-3">
                 <div className="flex bg-surface p-1.5 rounded-lg gap-1">
                     {(['attendance', 'marks', 'grades'] as Tab[]).map((tab) => (
                         <button
@@ -379,15 +392,15 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            <main className="relative z-10 pt-32 md:pt-24 pb-10">
+            <main className="relative z-10 pt-36 md:pt-24 pb-10">
                 {/* Attendance Tab */}
                 {activeTab === 'attendance' && (
                     <div className="max-w-6xl mx-auto px-4">
                         {/* Overall Attendance Banner - Redesigned */}
                         <div className="mb-6 opacity-0 animate-blur-in">
                             <div className={`relative overflow-hidden rounded-2xl p-6 sm:p-8 border-2 ${overallPercentage >= 75
-                                    ? 'bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent border-green-500/30'
-                                    : 'bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent border-red-500/30'
+                                ? 'bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent border-green-500/30'
+                                : 'bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent border-red-500/30'
                                 }`}>
                                 {/* Background Decoration */}
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-radial from-white/5 to-transparent blur-3xl pointer-events-none"></div>
@@ -419,8 +432,8 @@ export default function Dashboard() {
 
                                     {/* Right Side: Safe/Need Badge */}
                                     <div className={`flex items-center gap-2 px-4 sm:px-6 py-3 rounded-full border-2 ${overallPercentage >= 75
-                                            ? 'bg-green-500/10 border-green-500/30 text-green-300'
-                                            : 'bg-red-500/10 border-red-500/30 text-red-300'
+                                        ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                                        : 'bg-red-500/10 border-red-500/30 text-red-300'
                                         }`}>
                                         <span className="text-lg sm:text-xl font-bold">
                                             {overallPercentage >= 75 ? '✓' : '!'}
@@ -648,6 +661,21 @@ export default function Dashboard() {
                 }
 
             </main>
+
+            {/* Toast Notification */}
+            {showToast && (
+                <div className="fixed bottom-8 right-8 z-50 animate-fade-in-up">
+                    <div className={`px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 border-2 ${toastType === 'success'
+                        ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                        : 'bg-red-500/10 border-red-500/30 text-red-300'
+                        }`}>
+                        <span className="text-2xl">
+                            {toastType === 'success' ? '✓' : '✗'}
+                        </span>
+                        <span className="font-medium">{toastMessage}</span>
+                    </div>
+                </div>
+            )}
 
             {/* Footer / Disclaimer */}
             <footer className="py-8 text-center opacity-60 hover:opacity-100 transition-opacity">
