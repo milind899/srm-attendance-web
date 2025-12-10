@@ -209,7 +209,7 @@ export async function scrapeEntAttendance(username: string, password: string): P
 
             // Check if login iframe is still present (sign SPA hasn't loaded)
             const frames = page.frames();
-            const hasLoginFrame = frames.some(f => f.name() === 'zohoiam' || f.url().includes('signin') || f.url().includes('accounts'));
+            const hasLoginFrame = frames.some((f: any) => f.name() === 'zohoiam' || f.url().includes('signin') || f.url().includes('accounts'));
 
             if (hasLoginFrame) {
                 console.log('[ENT] WARNING: Login iframe still present. SPA may not have initialized. Forcing reload...');
