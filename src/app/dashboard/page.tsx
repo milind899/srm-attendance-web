@@ -337,7 +337,7 @@ export default function Dashboard() {
                         <button
                             onClick={handleRefresh}
                             disabled={isRefreshing}
-                            className={`p-3 sm:p-2 rounded-full bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-min ${isRefreshing ? 'animate-spin' : ''}`}
+                            className={`flex items-center justify-center p-3 sm:p-2 rounded-full bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-min ${isRefreshing ? 'animate-spin' : ''}`}
                             title="Refresh Data"
                         >
                             <RefreshCw size={22} className="sm:w-[18px] sm:h-[18px]" />
@@ -346,7 +346,7 @@ export default function Dashboard() {
                         {/* Share Button */}
                         <button
                             onClick={() => setShowShareCard(true)}
-                            className="p-3 sm:p-2 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors touch-min"
+                            className="flex items-center justify-center p-3 sm:p-2 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors touch-min"
                             title="Share Attendance"
                         >
                             <Share2 size={22} className="sm:w-[18px] sm:h-[18px]" />
@@ -396,8 +396,8 @@ export default function Dashboard() {
                 {/* Attendance Tab */}
                 {activeTab === 'attendance' && (
                     <div className="max-w-6xl mx-auto px-4">
-                        {/* Overall Attendance Banner - Redesigned */}
-                        <div className="mb-6 opacity-0 animate-blur-in">
+                        {/* Overall Attendance Banner - Enhanced */}
+                        <div className="mb-8 opacity-0 animate-blur-in">
                             <div className={`relative overflow-hidden rounded-2xl p-6 sm:p-8 border-2 ${overallPercentage >= 75
                                 ? 'bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent border-green-500/30'
                                 : 'bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent border-red-500/30'
@@ -824,9 +824,9 @@ function MarksCard({ subject }: { subject: SubjectMarks }) {
                     </div>
                 </div>
 
-                {/* HUGE Percentage */}
+                {/* HUGE Percentage with Decrypt */}
                 <div className={`text-5xl font-black ${textColor} leading-none`}>
-                    {percentage.toFixed(0)}
+                    <DecryptText text={percentage.toFixed(0)} speed={30} delay={0} />
                     <span className="text-2xl">%</span>
                 </div>
             </div>
