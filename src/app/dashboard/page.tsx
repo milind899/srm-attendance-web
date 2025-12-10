@@ -324,19 +324,19 @@ export default function Dashboard() {
                         <button
                             onClick={handleRefresh}
                             disabled={isRefreshing}
-                            className={`p-2 rounded-full bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isRefreshing ? 'animate-spin' : ''}`}
+                            className={`p-3 sm:p-2 rounded-full bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-min ${isRefreshing ? 'animate-spin' : ''}`}
                             title="Refresh Data"
                         >
-                            <RefreshCw size={18} />
+                            <RefreshCw size={22} className="sm:w-[18px] sm:h-[18px]" />
                         </button>
 
                         {/* Share Button */}
                         <button
                             onClick={() => setShowShareCard(true)}
-                            className="p-2 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
+                            className="p-3 sm:p-2 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors touch-min"
                             title="Share Attendance"
                         >
-                            <Share2 size={18} />
+                            <Share2 size={22} className="sm:w-[18px] sm:h-[18px]" />
                         </button>
 
                         <span className="text-sm text-textMuted hidden sm:block">{data.studentName || 'Student'}</span>
@@ -362,13 +362,13 @@ export default function Dashboard() {
             </nav>
 
             {/* Mobile Tab Bar - Top Sticky */}
-            <div className="md:hidden fixed top-16 left-0 right-0 z-40 bg-background border-b border-border px-4 py-2">
-                <div className="flex bg-surface p-1 rounded-lg">
+            <div className="md:hidden fixed top-16 left-0 right-0 z-40 bg-background border-b border-border px-4 py-3">
+                <div className="flex bg-surface p-1.5 rounded-lg gap-1">
                     {(['attendance', 'marks', 'grades'] as Tab[]).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${activeTab === tab
+                            className={`flex-1 py-3 text-sm font-medium rounded-md transition-all touch-min ${activeTab === tab
                                 ? 'bg-primary/20 text-white shadow-sm'
                                 : 'text-textMuted hover:text-white'
                                 }`}
@@ -383,30 +383,54 @@ export default function Dashboard() {
                 {/* Attendance Tab */}
                 {activeTab === 'attendance' && (
                     <div className="max-w-6xl mx-auto px-4">
-                        {/* Compact Status Bar - Mobile First */}
-                        <div className="mb-4 opacity-0 animate-blur-in">
-                            <div className={`flex items-center justify-between p-4 rounded-xl border-2 ${overallPercentage >= 75 ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'
+                        {/* Overall Attendance Banner - Redesigned */}
+                        <div className="mb-6 opacity-0 animate-blur-in">
+                            <div className={`relative overflow-hidden rounded-2xl p-6 sm:p-8 border-2 ${overallPercentage >= 75
+                                    ? 'bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent border-green-500/30'
+                                    : 'bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent border-red-500/30'
                                 }`}>
-                                {/* Left: Percentage */}
-                                <div className="flex items-center gap-3">
-                                    <div className={`text-4xl font-black ${overallPercentage >= 75 ? 'text-green-400' : 'text-red-400'}`}>
-                                        {overallPercentage}%
-                                    </div>
-                                    <div className="hidden sm:block">
-                                        <div className="text-xs text-white/40">Overall</div>
-                                        <div className="text-sm text-white/60">{attendedHours} / {totalHours} hrs</div>
-                                    </div>
-                                </div>
+                                {/* Background Decoration */}
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-radial from-white/5 to-transparent blur-3xl pointer-events-none"></div>
 
-                                {/* Right: Action */}
-                                <div className={`px-4 py-2 rounded-lg border-2 ${overallPercentage >= 75
-                                    ? 'bg-green-500/15 border-green-500/30 text-green-300'
-                                    : 'bg-red-500/15 border-red-500/30 text-red-300'
-                                    }`}>
-                                    <div className="text-sm font-black whitespace-nowrap">
-                                        {overallPercentage >= 75
-                                            ? `✓ Safe ${Math.max(0, overallCanMiss)}`
-                                            : `! Need ${Math.max(0, overallNeedToAttend)}`}
+                                <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                    {/* Left Side: Percentage & Info */}
+                                    <div className="flex items-center gap-4 sm:gap-6">
+                                        {/* Giant Percentage */}
+                                        <div className={`text-6xl sm:text-7xl font-black leading-none ${overallPercentage >= 75 ? 'text-green-400' : 'text-red-400'
+                                            }`}>
+                                            {overallPercentage}
+                                            <span className="text-3xl sm:text-4xl">%</span>
+                                        </div>
+
+                                        {/* Divider */}
+                                        <div className={`hidden sm:block w-px h-16 ${overallPercentage >= 75 ? 'bg-green-500/20' : 'bg-red-500/20'
+                                            }`}></div>
+
+                                        {/* Details */}
+                                        <div className="flex flex-col gap-1">
+                                            <div className="text-base sm:text-lg font-semibold text-white/90">
+                                                Overall
+                                            </div>
+                                            <div className="text-sm text-white/50">
+                                                {attendedHours} / {totalHours} hrs
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Right Side: Safe/Need Badge */}
+                                    <div className={`flex items-center gap-2 px-4 sm:px-6 py-3 rounded-full border-2 ${overallPercentage >= 75
+                                            ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                                            : 'bg-red-500/10 border-red-500/30 text-red-300'
+                                        }`}>
+                                        <span className="text-lg sm:text-xl font-bold">
+                                            {overallPercentage >= 75 ? '✓' : '!'}
+                                        </span>
+                                        <span className="text-sm sm:text-base font-semibold whitespace-nowrap">
+                                            {overallPercentage >= 75
+                                                ? `Safe ${department === 'FSH' ? Math.max(0, overallCanMiss) : ''}`
+                                                : `Need ${department === 'FSH' ? Math.max(0, overallNeedToAttend) : '0'} more`
+                                            }
+                                        </span>
                                     </div>
                                 </div>
                             </div>

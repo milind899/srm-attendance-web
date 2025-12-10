@@ -121,18 +121,18 @@ function LoginForm() {
 
                     {/* Portal Selector */}
                     <div className="px-6 sm:px-8 pb-4">
-                        <div className="flex bg-[#0B0C0E] rounded-lg p-1 border border-border">
+                        <div className="flex bg-[#0B0C0E] rounded-lg p-1.5 sm:p-1 border border-border">
                             <button
                                 type="button"
                                 onClick={() => router.push('/login?dept=FSH')}
-                                className={`flex-1 py-2.5 text-sm font-medium rounded-md transition-all ${dept === 'FSH' ? 'bg-primary text-white' : 'text-textMuted hover:text-white'}`}
+                                className={`flex-1 py-3.5 sm:py-2.5 text-base sm:text-sm font-medium rounded-md transition-all touch-min ${dept === 'FSH' ? 'bg-primary text-white' : 'text-textMuted hover:text-white'}`}
                             >
                                 FSH Portal
                             </button>
                             <button
                                 type="button"
                                 disabled
-                                className="flex-1 py-2.5 text-sm font-medium rounded-md transition-all relative cursor-not-allowed opacity-50"
+                                className="flex-1 py-3.5 sm:py-2.5 text-base sm:text-sm font-medium rounded-md transition-all relative cursor-not-allowed opacity-50"
                                 title="Coming Soon - Under Development"
                             >
                                 <span>ENT Portal</span>
@@ -172,7 +172,8 @@ function LoginForm() {
                                             type="text"
                                             value={username}
                                             onChange={(e) => setUsername(e.target.value)}
-                                            className="w-full bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-700 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
+                                            autoComplete="username"
+                                            className="w-full bg-[#0B0C0E] border border-border rounded-lg px-4 py-4 sm:py-3 text-base sm:text-sm text-white placeholder:text-gray-700 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
                                             placeholder={dept === 'ENT' ? "student@srmist.edu.in" : "NetID"}
                                             required
                                         />
@@ -185,16 +186,17 @@ function LoginForm() {
                                                 type={showPassword ? "text" : "password"}
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-700 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
+                                                autoComplete="current-password"
+                                                className="w-full bg-[#0B0C0E] border border-border rounded-lg px-4 py-4 sm:py-3 pr-12 text-base sm:text-sm text-white placeholder:text-gray-700 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
                                                 placeholder="••••••••"
                                                 required
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted hover:text-white transition-colors"
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 sm:p-2 text-textMuted hover:text-white transition-colors touch-min"
                                             >
-                                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                {showPassword ? <EyeOff size={20} className="sm:w-4 sm:h-4" /> : <Eye size={20} className="sm:w-4 sm:h-4" />}
                                             </button>
                                         </div>
                                     </div>
@@ -207,14 +209,15 @@ function LoginForm() {
                                                     type="text"
                                                     value={captchaVal}
                                                     onChange={(e) => setCaptchaVal(e.target.value)}
-                                                    className="flex-1 bg-[#0B0C0E] border border-border rounded-lg px-4 py-3 text-sm text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
+                                                    autoComplete="off"
+                                                    className="flex-1 bg-[#0B0C0E] border border-border rounded-lg px-4 py-4 sm:py-3 text-base sm:text-sm text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
                                                     placeholder="Enter code"
                                                     required
                                                 />
                                                 <div className="relative group flex-shrink-0">
                                                     {captchaImg ? (
                                                         <div
-                                                            className="h-[46px] w-[120px] px-2 bg-white rounded-lg flex items-center justify-center cursor-pointer opacity-90 hover:opacity-100 transition-opacity border-2 border-transparent hover:border-primary/50"
+                                                            className="h-[60px] w-[140px] sm:h-[46px] sm:w-[120px] px-2 bg-white rounded-lg flex items-center justify-center cursor-pointer opacity-90 hover:opacity-100 transition-opacity border-2 border-transparent hover:border-primary/50 touch-min"
                                                             onClick={fetchCaptcha}
                                                             title="Click to refresh"
                                                         >
@@ -222,8 +225,8 @@ function LoginForm() {
                                                             <img src={captchaImg} alt="Captcha" className="h-full w-full object-contain" />
                                                         </div>
                                                     ) : (
-                                                        <div className="h-[46px] w-[120px] bg-white/5 rounded-lg flex items-center justify-center animate-pulse">
-                                                            <Loader2 className="w-4 h-4 text-textMuted animate-spin" />
+                                                        <div className="h-[60px] w-[140px] sm:h-[46px] sm:w-[120px] bg-white/5 rounded-lg flex items-center justify-center animate-pulse">
+                                                            <Loader2 className="w-5 h-5 sm:w-4 sm:h-4 text-textMuted animate-spin" />
                                                         </div>
                                                     )}
                                                 </div>
@@ -234,10 +237,10 @@ function LoginForm() {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 rounded-lg transition-all shadow-[0_0_20px_rgba(94,106,210,0.3)] hover:shadow-[0_0_25px_rgba(94,106,210,0.5)] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-4 sm:py-3 text-base sm:text-sm rounded-lg transition-all shadow-[0_0_20px_rgba(94,106,210,0.3)] hover:shadow-[0_0_25px_rgba(94,106,210,0.5)] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 touch-min"
                                     >
-                                        {loading ? <Loader2 className="animate-spin w-4 h-4" /> : 'Sign In'}
-                                        {!loading && <ArrowRight size={16} />}
+                                        {loading ? <Loader2 className="animate-spin w-5 h-5 sm:w-4 sm:h-4" /> : 'Sign In'}
+                                        {!loading && <ArrowRight size={18} className="sm:w-4 sm:h-4" />}
                                     </button>
                                 </form>
                             </>
