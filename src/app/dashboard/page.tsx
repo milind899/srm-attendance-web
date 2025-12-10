@@ -438,12 +438,19 @@ export default function Dashboard() {
                                         <span className="text-lg sm:text-xl font-bold">
                                             {overallPercentage >= 75 ? '✓' : '!'}
                                         </span>
-                                        <span className="text-sm sm:text-base font-semibold whitespace-nowrap">
-                                            {overallPercentage >= 75
-                                                ? `Safe ${department === 'FSH' ? Math.max(0, overallCanMiss) : ''}`
-                                                : `Need ${department === 'FSH' ? Math.max(0, overallNeedToAttend) : '0'} more`
-                                            }
-                                        </span>
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="text-sm sm:text-base font-semibold whitespace-nowrap">
+                                                {overallPercentage >= 75
+                                                    ? `Safe ${department === 'FSH' ? Math.max(0, overallCanMiss) : ''}`
+                                                    : `Need ${department === 'FSH' ? Math.max(0, overallNeedToAttend) : '0'} more`
+                                                }
+                                            </span>
+                                            {overallPercentage >= 75 && department === 'FSH' && (
+                                                <span className="text-xs text-green-300/70">
+                                                    Can miss {Math.max(0, overallCanMiss)} {Math.max(0, overallCanMiss) === 1 ? 'class' : 'classes'}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
