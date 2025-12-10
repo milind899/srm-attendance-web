@@ -470,6 +470,13 @@ export default function Dashboard() {
                 {/* Marks Tab */}
                 {activeTab === 'marks' && (
                     <div className="max-w-6xl mx-auto px-4">
+                        {/* Header with Animation */}
+                        <div className="text-center mb-6 opacity-0 animate-blur-in">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/50 px-3 py-1.5 text-xs text-textMuted mb-4 backdrop-blur-sm">
+                                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                <DecryptText text="Internal Marks" speed={30} delay={200} />
+                            </div>
+                        </div>
                         {/* Hero Section - Mobile Optimized */}
                         {/* Compact Header */}
                         <div className="mb-4 opacity-0 animate-blur-in">
@@ -543,7 +550,7 @@ export default function Dashboard() {
                             {subjectsWithMarks.length > 0 ? (
                                 <>
                                     <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-accent-yellow via-accent-yellow to-accent-yellow/60 mb-2">
-                                        {calculatePredictedGPA().gpa}
+                                        <DecryptText text={calculatePredictedGPA().gpa} speed={40} delay={300} />
                                     </h1>
                                     <p className="text-base sm:text-lg text-textMuted mb-1">Predicted GPA</p>
                                     <p className="text-xs sm:text-sm text-textMuted/70">Based on target grades below</p>
