@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ShieldCheck, BarChart3, Lock, Trash2, Mail } from 'lucide-react';
 
 export default function PrivacyPage() {
     return (
@@ -8,12 +9,18 @@ export default function PrivacyPage() {
                     ← Back to home
                 </Link>
 
-                <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
+                <div className="flex items-center gap-3 mb-8">
+                    <ShieldCheck className="w-8 h-8 text-primary" />
+                    <h1 className="text-4xl font-bold">Privacy Policy</h1>
+                </div>
 
                 <div className="space-y-8 text-textMuted">
                     <section>
-                        <h2 className="text-xl font-semibold text-white mb-3">🔒 Your Data is Safe</h2>
-                        <p className="leading-relaxed">
+                        <h2 className="flex items-center gap-2 text-xl font-semibold text-white mb-3">
+                            <Lock className="w-5 h-5 text-green-400" />
+                            Your Data is Safe
+                        </h2>
+                        <p className="leading-relaxed pl-7">
                             AttendX does <span className="text-green-400 font-medium">NOT store any passwords</span>.
                             Your credentials are used only to authenticate with the official SRM portals and are
                             never saved, logged, or transmitted to any third-party servers.
@@ -21,8 +28,11 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-semibold text-white mb-3">📊 What We Store</h2>
-                        <ul className="list-disc list-inside space-y-2">
+                        <h2 className="flex items-center gap-2 text-xl font-semibold text-white mb-3">
+                            <BarChart3 className="w-5 h-5 text-blue-400" />
+                            What We Store
+                        </h2>
+                        <ul className="list-disc list-inside space-y-2 pl-7">
                             <li>Attendance records (stored locally in your browser)</li>
                             <li>No personal identification data</li>
                             <li>No cookies for tracking</li>
@@ -30,8 +40,11 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-semibold text-white mb-3">🔐 How It Works</h2>
-                        <p className="leading-relaxed">
+                        <h2 className="flex items-center gap-2 text-xl font-semibold text-white mb-3">
+                            <ShieldCheck className="w-5 h-5 text-purple-400" />
+                            How It Works
+                        </h2>
+                        <p className="leading-relaxed pl-7">
                             When you log in, your credentials are sent directly to the official SRM Academia or FSH portal.
                             We act as a secure middleman to fetch your attendance data. Once fetched, the data is stored
                             only in your browser's local storage - it never touches our servers.
@@ -39,8 +52,11 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-semibold text-white mb-3">🗑️ Data Deletion</h2>
-                        <p className="leading-relaxed">
+                        <h2 className="flex items-center gap-2 text-xl font-semibold text-white mb-3">
+                            <Trash2 className="w-5 h-5 text-red-400" />
+                            Data Deletion
+                        </h2>
+                        <p className="leading-relaxed pl-7">
                             All your data is stored locally in your browser. To delete it, simply clear your browser's
                             local storage or click "Logout" in the dashboard. We have no access to delete your data
                             because we never had it in the first place.
@@ -48,7 +64,10 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-semibold text-white mb-3">📬 Contact</h2>
+                        <h2 className="flex items-center gap-2 text-xl font-semibold text-white mb-3">
+                            <Mail className="w-5 h-5 text-orange-400" />
+                            Contact
+                        </h2>
                         <p className="leading-relaxed">
                             Questions about privacy? Reach out via{' '}
                             <a href="https://github.com/milind899" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">

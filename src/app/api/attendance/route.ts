@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { scrapeEntAttendance } from '@/lib/scrapers/entScraper';
+import { EntClient } from '@/lib/clients/entClient';
 import { FshClient } from '@/lib/clients/fshClient';
 import { z } from 'zod';
 
@@ -32,8 +32,9 @@ export async function POST(request: Request) {
 
         let result: any;
         if (department === 'ENT') {
-            console.error(`[API] Starting ENT scrape for user: ${username}`);
-            result = await scrapeEntAttendance(username, password);
+            console.error(`[API] Starting ENT HTTP client for user: ${username}`);
+            const client = new EntClient();
+            result = await client.loginAndFetch(username, password);
         } else {
             console.error(`[API] Starting FSH HTTP scrape for user: ${username}`);
             // Check for required HTTP-mode params

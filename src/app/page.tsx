@@ -160,9 +160,12 @@ export default function Home() {
                 </Link>
                 <Link
                   href="/login?dept=ENT"
-                  className="w-full sm:w-auto h-14 px-8 text-base bg-transparent text-textMain border border-border hover:bg-surfaceHighlight hover:border-[#4B4E56] inline-flex items-center justify-center rounded-full font-semibold transition-all"
+                  className="relative w-full sm:w-auto h-14 px-8 text-base bg-transparent text-textMain border border-border hover:bg-surfaceHighlight hover:border-[#4B4E56] inline-flex items-center justify-center rounded-full font-semibold transition-all"
                 >
                   ENT Portal
+                  <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-yellow-500/20 text-yellow-400 rounded-full border border-yellow-500/30">
+                    SOON
+                  </span>
                   <ArrowRight size={18} className="ml-2" />
                 </Link>
               </div>

@@ -53,6 +53,20 @@ export class FshClient {
     public async loginAndFetch(username: string, pass: string, captcha: string, csrf: string, cookieStr: string): Promise<ScraperResult> {
         console.error('[FshClient] loginAndFetch called');
 
+        // Validate inputs
+        if (!username || username.trim().length === 0) {
+            return { success: false, error: 'Username is required' };
+        }
+        if (!pass || pass.trim().length === 0) {
+            return { success: false, error: 'Password is required' };
+        }
+        if (!captcha || captcha.trim().length === 0) {
+            return { success: false, error: 'Captcha is required. Please enter the captcha shown in the image.' };
+        }
+        if (!csrf || !cookieStr) {
+            return { success: false, error: 'Session expired. Please refresh the page and try again.' };
+        }
+
         await this.restoreCookies(cookieStr);
 
         const params = this.buildLoginParams(username, pass, captcha, csrf);
@@ -242,7 +256,30 @@ export class FshClient {
         });
 
         if (data.length === 0) {
-            return { success: false, error: 'Attendance table not found in response' };
+            // Check if we're on the login page (session expired)
+            if (html.includes('youLogin.jsp') || html.includes('txtAN') || html.includes('ccode')) {
+                return { success: false, error: 'Session expired. Please login again.' };
+            }
+
+            // Check if portal returned an error page
+            if (html.includes('500') || html.includes('Internal Server Error')) {
+                return { success: false, error: 'SRM Portal encountered an error. Please try again later.' };
+            }
+
+            // Check if student has no attendance records yet
+            if (html.toLowerCase().includes('no records') || html.toLowerCase().includes('no attendance')) {
+                return {
+                    success: true,
+                    data: {
+                        studentName: username,
+                        registrationNumber: username,
+                        records: []
+                    },
+                    error: 'No attendance records found. Your academic data may not be available yet.'
+                };
+            }
+
+            return { success: false, error: 'Unable to find attendance data. The portal page structure may have changed. Please try Manual Sync or contact support.' };
         }
 
         const processedRecords: AttendanceRecord[] = data.map((r: any) => ({
@@ -265,55 +302,70 @@ export class FshClient {
         const $ = cheerio.load(html);
         const subjects: SubjectMarks[] = [];
 
-        // Parse the main marks table
+        // Parse the main marks table - look for multiple patterns
         $('table').each((_, table) => {
             const $t = $(table);
             const txt = $t.text().toLowerCase();
 
-            if (txt.includes('code') && txt.includes('description') && txt.includes('mark')) {
+            // More flexible table detection - accept various header patterns
+            const looksLikeMarksTable =
+                (txt.includes('code') && (txt.includes('mark') || txt.includes('total') || txt.includes('internal'))) ||
+                (txt.includes('subject') && txt.includes('mark')) ||
+                (txt.includes('course') && txt.includes('score'));
+
+            if (looksLikeMarksTable) {
                 $t.find('tr').each((i, row) => {
                     const cols = $(row).find('td');
-                    if (cols.length < 3) return;
+                    if (cols.length < 2) return;
 
                     const code = $(cols[0]).text().trim();
-                    if (!code || code.toLowerCase().includes('code')) return;
+                    if (!code || code.toLowerCase().includes('code') || code.toLowerCase().includes('subject')) return;
 
-                    const name = $(cols[1]).text().trim();
-                    const marksText = $(cols[2]).text().trim();
+                    // Try to find name and marks from available columns
+                    let name = $(cols[1]).text().trim();
+                    let marks = 0;
+                    let maxMarks = 50;
 
-                    // Parse "40.00 / 50.00" format
-                    const marksParts = marksText.split('/').map(s => parseFloat(s.trim()));
-                    const marks = marksParts[0] || 0;
-                    const maxMarks = marksParts[1] || 50;
+                    // Search all columns for marks pattern "XX / YY" or just numbers
+                    for (let c = 2; c < cols.length; c++) {
+                        const colText = $(cols[c]).text().trim();
 
-                    // Check for View Details link (usually 4th column)
-                    let detailsUrl = '';
-                    if (cols.length >= 4) {
-                        const link = $(cols[3]).find('a');
-                        const onclick = $(cols[3]).find('input[type="button"]').attr('onclick');
-
-                        if (link.length > 0) {
-                            detailsUrl = link.attr('href') || '';
-                        } else if (onclick) {
-                            // Extract URL from onclick (e.g. window.open('...'))
-                            const match = onclick.match(/['"]([^'"]+\.jsp[^'"]*)['"]/);
-                            if (match) detailsUrl = match[1];
+                        // Parse "40.00 / 50.00" or "40/50" format
+                        if (colText.includes('/')) {
+                            const marksParts = colText.split('/').map(s => parseFloat(s.trim().replace(/[^\d.]/g, '')));
+                            if (!isNaN(marksParts[0]) && !isNaN(marksParts[1])) {
+                                marks = marksParts[0];
+                                maxMarks = marksParts[1];
+                                break;
+                            }
                         }
                     }
 
-                    if (detailsUrl) {
-                        console.log(`[FshClient] Found details URL for ${code}: ${detailsUrl}`);
-                        // Future: store this URL to fetch details later
+                    // If no "/" format found, look for standalone numbers that could be marks
+                    if (marks === 0 && cols.length >= 3) {
+                        const colText = $(cols[2]).text().trim();
+                        const parsed = parseFloat(colText);
+                        if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+                            marks = parsed;
+                        }
                     }
+
+                    // Skip if no valid code or marks found
+                    if (code.length < 3 || (marks === 0 && name.length < 3)) return;
 
                     subjects.push({
                         subjectCode: code,
-                        subjectName: name,
+                        subjectName: name || code,
                         totalMarks: marks,
                         maxTotalMarks: maxMarks,
-                        components: [] // Will be populated from detail view if needed
+                        components: []
                     });
                 });
+
+                // Stop after finding first valid marks table
+                if (subjects.length > 0) {
+                    return false;
+                }
             }
         });
 

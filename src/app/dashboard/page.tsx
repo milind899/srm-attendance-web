@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { InstallPrompt } from '@/components/InstallPrompt';
+
 import { AttendanceData, AttendanceRecord, InternalMarksData, SubjectMarks } from '@/lib/types';
 import { DecryptText } from '@/components/DecryptText';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Share2, BarChart3, Award, FileText } from 'lucide-react';
+import AttendanceCard from '@/components/AttendanceCard';
 
 type Tab = 'attendance' | 'marks' | 'grades';
 
@@ -36,6 +37,9 @@ export default function Dashboard() {
     // Grade goal state - target grade for each subject
     const [targetGrades, setTargetGrades] = useState<{ [key: string]: string }>({});
 
+    // Share card state
+    const [showShareCard, setShowShareCard] = useState(false);
+
     useEffect(() => {
         document.documentElement.classList.add('dark');
 
@@ -43,14 +47,20 @@ export default function Dashboard() {
         const dept = localStorage.getItem('department') || 'ENT';
         setDepartment(dept);
 
-        // Load cached internal marks
+        // Load cached internal marks - but only if they match current department
         const cachedMarks = localStorage.getItem('internalMarksData');
-        if (cachedMarks) {
+        const cachedMarksDept = localStorage.getItem('internalMarksDepartment');
+
+        if (cachedMarks && cachedMarksDept === dept) {
             try {
                 setInternalMarks(JSON.parse(cachedMarks));
             } catch (e) {
                 console.error('Failed to parse cached marks:', e);
             }
+        } else if (cachedMarks && cachedMarksDept !== dept) {
+            // Clear mismatched cached marks
+            localStorage.removeItem('internalMarksData');
+            localStorage.removeItem('internalMarksDepartment');
         }
 
         if (!stored) {
@@ -69,7 +79,7 @@ export default function Dashboard() {
             setTargetGrades(initialTargets);
 
             // Fetch internal marks for FSH department only if not already present
-            if (dept === 'FSH' && !cachedMarks) {
+            if (dept === 'FSH' && (!cachedMarks || cachedMarksDept !== dept)) {
                 fetchInternalMarks();
             }
 
@@ -104,6 +114,7 @@ export default function Dashboard() {
             if (result.success && result.data) {
                 setInternalMarks(result.data);
                 localStorage.setItem('internalMarksData', JSON.stringify(result.data));
+                localStorage.setItem('internalMarksDepartment', 'FSH');
             } else {
                 setMarksError(result.error || 'Failed to fetch marks');
             }
@@ -194,13 +205,13 @@ export default function Dashboard() {
     });
 
     return (
-        <div className="min-h-screen bg-background text-textMain selection:bg-primary/30 selection:text-white font-sans animate-scale-in origin-center">
+        <div className="min-h-screen bg-background text-textMain selection:bg-primary/30 selection:text-white font-sans animate-scale-in origin-center overflow-x-hidden">
             {/* Background Glow Effects - like homepage */}
             <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-glow-gradient opacity-40 pointer-events-none z-0" />
             <div className="fixed top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none z-0" />
 
             {/* Navbar */}
-            <nav className="fixed top-0 left-0 right-0 z-50 glass-nav">
+            <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-white/10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2">
                         <img src="/logo.png" alt="AttendX" className="w-8 h-8" />
@@ -224,6 +235,15 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {/* Share Button */}
+                        <button
+                            onClick={() => setShowShareCard(true)}
+                            className="p-2 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
+                            title="Share Attendance"
+                        >
+                            <Share2 size={18} />
+                        </button>
+
                         <span className="text-sm text-textMuted hidden sm:block">{data.studentName || 'Student'}</span>
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent-yellow flex items-center justify-center text-white text-sm font-bold">
                             {data.studentName?.charAt(0) || 'S'}
@@ -247,8 +267,8 @@ export default function Dashboard() {
             </nav>
 
             {/* Mobile Tab Bar - Top Sticky */}
-            <div className="md:hidden fixed top-16 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50 px-4 py-2">
-                <div className="flex bg-surface/50 p-1 rounded-lg">
+            <div className="md:hidden fixed top-16 left-0 right-0 z-40 bg-background border-b border-border px-4 py-2">
+                <div className="flex bg-surface p-1 rounded-lg">
                     {(['attendance', 'marks', 'grades'] as Tab[]).map((tab) => (
                         <button
                             key={tab}
@@ -268,41 +288,38 @@ export default function Dashboard() {
                 {/* Attendance Tab */}
                 {activeTab === 'attendance' && (
                     <div className="max-w-6xl mx-auto px-4">
-                        {/* Hero Stats - Mobile First */}
-                        <div className="text-center mb-6 opacity-0 animate-blur-in">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/50 px-3 py-1.5 text-xs text-textMuted mb-4 backdrop-blur-sm">
-                                <span className={`w-2 h-2 rounded-full ${overallPercentage >= 75 ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></span>
-                                <DecryptText
-                                    text={overallPercentage >= 75 ? 'Attendance Safe' : 'Attendance Critical'}
-                                    speed={30}
-                                    delay={200}
-                                />
-                            </div>
-
-                            <h1 className="text-5xl sm:text-6xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-[#EEEEF0] via-[#EEEEF0] to-[#EEEEF0]/60 mb-2">
-                                {overallPercentage}%
-                            </h1>
-
-                            <p className="text-sm text-textMuted mb-1">
-                                {attendedHours} / {totalHours} hours
-                            </p>
-
-                            <div className={`inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full border ${overallPercentage >= 75
-                                ? 'border-green-500/30 bg-green-500/10 text-green-400'
-                                : 'border-red-500/30 bg-red-500/10 text-red-400'
+                        {/* Compact Status Bar - Mobile First */}
+                        <div className="mb-4 opacity-0 animate-blur-in">
+                            <div className={`flex items-center justify-between p-4 rounded-xl border-2 ${overallPercentage >= 75 ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'
                                 }`}>
-                                <span className="text-sm font-bold">
-                                    {overallPercentage >= 75
-                                        ? `Can miss ${Math.max(0, overallCanMiss)} classes`
-                                        : `Need to attend ${Math.max(0, overallNeedToAttend)} classes`}
-                                </span>
+                                {/* Left: Percentage */}
+                                <div className="flex items-center gap-3">
+                                    <div className={`text-4xl font-black ${overallPercentage >= 75 ? 'text-green-400' : 'text-red-400'}`}>
+                                        {overallPercentage}%
+                                    </div>
+                                    <div className="hidden sm:block">
+                                        <div className="text-xs text-white/40">Overall</div>
+                                        <div className="text-sm text-white/60">{attendedHours} / {totalHours} hrs</div>
+                                    </div>
+                                </div>
+
+                                {/* Right: Action */}
+                                <div className={`px-4 py-2 rounded-lg border-2 ${overallPercentage >= 75
+                                    ? 'bg-green-500/15 border-green-500/30 text-green-300'
+                                    : 'bg-red-500/15 border-red-500/30 text-red-300'
+                                    }`}>
+                                    <div className="text-sm font-black whitespace-nowrap">
+                                        {overallPercentage >= 75
+                                            ? `✓ Safe ${Math.max(0, overallCanMiss)}`
+                                            : `! Need ${Math.max(0, overallNeedToAttend)}`}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Subject Cards - Horizontal Scroll on Mobile */}
                         {/* Subject Cards - Vertical Stack on Mobile */}
                         <div className="opacity-0 animate-blur-in delay-200">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                                 {data.records.map((record, i) => (
                                     <SubjectCard key={`${record.subjectCode}-${i}`} record={record} department={department} />
                                 ))}
@@ -314,79 +331,61 @@ export default function Dashboard() {
                 {/* Marks Tab */}
                 {activeTab === 'marks' && (
                     <div className="max-w-6xl mx-auto px-4">
+                        {/* Hero Section - Mobile Optimized */}
+                        {/* Compact Header */}
+                        <div className="mb-4 opacity-0 animate-blur-in">
+                            <h2 className="text-2xl font-bold text-white">Internal Marks</h2>
+                            <p className="text-sm text-white/40">Tests & assignments</p>
+                        </div>
+
                         {department === 'ENT' ? (
-                            <div className="flex flex-col items-center justify-center py-20 opacity-0 animate-blur-in">
-                                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                                    <Loader2 className="w-8 h-8 text-primary animate-pulse" />
+                            <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
+                                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
+                                    <span className="text-2xl">🚧</span>
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2">Coming Soon</h3>
-                                <p className="text-textMuted text-center max-w-xs">
-                                    This feature is currently under development for ENT students and will be available shortly.
+                                <p className="text-textMuted max-w-sm mx-auto">
+                                    Internal marks for ENT department are currently under development. Please check back later!
                                 </p>
                             </div>
-                        ) : (
-                            <>
-                                {/* Hero Section - Mobile Optimized */}
-                                <div className="text-center mb-6 opacity-0 animate-blur-in">
-                                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/50 px-3 py-1.5 text-xs text-textMuted mb-4 backdrop-blur-sm">
-                                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                                        <DecryptText text="Internal Assessment" speed={30} delay={200} />
-                                    </div>
-
-                                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-[#EEEEF0] via-[#EEEEF0] to-[#EEEEF0]/60 mb-2">
-                                        Internal Marks
-                                    </h1>
-
-                                    <p className="text-sm text-textMuted">
-                                        Tests & assignments
-                                    </p>
+                        ) : !internalMarks || !subjectsWithMarks.length ? (
+                            <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
+                                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/20">
+                                    <FileText size={28} className="text-primary" />
                                 </div>
-
-                                {!subjectsWithMarks.length ? (
-                                    <div className="text-center py-8 opacity-0 animate-blur-in delay-200">
-                                        <p className="text-textMuted mb-4 text-sm">
-                                            {department === 'ENT'
-                                                ? 'No marks found. Please login again to refresh.'
-                                                : 'No marks data available.'}
-                                        </p>
-                                        {department === 'FSH' ? (
-                                            <button onClick={fetchInternalMarks} className="bg-[#EEEEF0] text-black px-5 py-2.5 rounded-full font-medium text-sm hover:bg-white transition-colors">
-                                                Fetch Marks →
-                                            </button>
-                                        ) : (
-                                            <button onClick={() => router.push('/login?dept=ENT')} className="bg-[#EEEEF0] text-black px-5 py-2.5 rounded-full font-medium text-sm hover:bg-white transition-colors">
-                                                Login Again →
-                                            </button>
-                                        )}
-                                    </div>
-                                ) : marksLoading ? (
-                                    <div className="flex justify-center py-12">
-                                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                    </div>
-                                ) : marksError ? (
-                                    <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
-                                        <p className="text-red-400 mb-6">{marksError}</p>
-                                        <button onClick={() => router.push('/login?dept=FSH')} className="bg-red-500 text-white px-6 py-3 rounded-full font-medium hover:bg-red-600 transition-colors">
-                                            Login Again →
-                                        </button>
-                                    </div>
-                                ) : subjectsWithMarks.length > 0 ? (
-                                    <div className="opacity-0 animate-blur-in delay-200">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                            {subjectsWithMarks.map((subject, i) => (
-                                                <MarksCard key={`${subject.subjectCode}-${i}`} subject={subject} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-8 opacity-0 animate-blur-in delay-200">
-                                        <p className="text-textMuted mb-4 text-sm">No marks data available.</p>
-                                        <button onClick={fetchInternalMarks} className="bg-[#EEEEF0] text-black px-5 py-2.5 rounded-full font-medium text-sm hover:bg-white transition-colors">
-                                            Fetch Marks →
-                                        </button>
-                                    </div>
+                                <h3 className="text-xl font-bold text-white mb-2">No Marks Data Yet</h3>
+                                <p className="text-textMuted mb-6 max-w-sm mx-auto text-sm">
+                                    {marksLoading ? 'Fetching your internal marks...' : 'Click below to fetch your latest internal marks from the portal'}
+                                </p>
+                                {!marksLoading && (
+                                    <button
+                                        onClick={fetchInternalMarks}
+                                        disabled={marksLoading}
+                                        className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-full font-medium transition-colors disabled:opacity-50"
+                                    >
+                                        Fetch Marks →
+                                    </button>
                                 )}
-                            </>
+                            </div>
+                        ) : marksLoading ? (
+                            <div className="flex justify-center py-12">
+                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        ) : marksError ? (
+                            <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
+                                <p className="text-red-400 mb-6">{marksError}</p>
+                                <button onClick={() => router.push(`/login?dept=${department}`)} className="bg-red-500 text-white px-6 py-3 rounded-full font-medium hover:bg-red-600 transition-colors">
+                                    Login Again →
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="opacity-0 animate-blur-in delay-200">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {subjectsWithMarks.map((subject, i) => (
+                                        <MarksCard key={`${subject.subjectCode}-${i}`} subject={subject} />
+                                    ))}
+                                </div>
+                            </div>
                         )}
                     </div>
                 )}
@@ -395,133 +394,135 @@ export default function Dashboard() {
                 {/* Grades Tab */}
                 {activeTab === 'grades' && (
                     <div className="max-w-6xl mx-auto px-4">
-                        {department === 'ENT' ? (
-                            <div className="flex flex-col items-center justify-center py-20 opacity-0 animate-blur-in">
-                                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                                    <Loader2 className="w-8 h-8 text-primary animate-pulse" />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Coming Soon</h3>
-                                <p className="text-textMuted text-center max-w-xs">
-                                    This feature is currently under development for ENT students and will be available shortly.
-                                </p>
+                        {/* Hero Section - Mobile Optimized */}
+                        <div className="text-center mb-6 opacity-0 animate-blur-in">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/50 px-3 py-1.5 text-xs text-textMuted mb-4 backdrop-blur-sm">
+                                <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
+                                <DecryptText text="Grade Predictor" speed={30} delay={200} />
                             </div>
-                        ) : (
-                            <>
-                                {/* Hero Section - Mobile Optimized */}
-                                <div className="text-center mb-6 opacity-0 animate-blur-in">
-                                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/50 px-3 py-1.5 text-xs text-textMuted mb-4 backdrop-blur-sm">
-                                        <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
-                                        <DecryptText text="Grade Predictor" speed={30} delay={200} />
-                                    </div>
 
-                                    {subjectsWithMarks.length > 0 ? (
-                                        <>
-                                            <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-accent-yellow via-accent-yellow to-accent-yellow/60 mb-2">
-                                                {calculatePredictedGPA().gpa}
-                                            </h1>
-                                            <p className="text-base sm:text-lg text-textMuted mb-1">Predicted GPA</p>
-                                            <p className="text-xs sm:text-sm text-textMuted/70">Based on target grades below</p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-[#EEEEF0] via-[#EEEEF0] to-[#EEEEF0]/60 mb-4">
-                                                Grade Predictor
-                                            </h1>
-                                            <p className="text-lg text-textMuted">Calculate your target grades</p>
-                                        </>
-                                    )}
-                                </div>
+                            {subjectsWithMarks.length > 0 ? (
+                                <>
+                                    <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-accent-yellow via-accent-yellow to-accent-yellow/60 mb-2">
+                                        {calculatePredictedGPA().gpa}
+                                    </h1>
+                                    <p className="text-base sm:text-lg text-textMuted mb-1">Predicted GPA</p>
+                                    <p className="text-xs sm:text-sm text-textMuted/70">Based on target grades below</p>
+                                </>
+                            ) : (
+                                <>
+                                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-[#EEEEF0] via-[#EEEEF0] to-[#EEEEF0]/60 mb-4">
+                                        Grade Predictor
+                                    </h1>
+                                    <p className="text-lg text-textMuted">Calculate your target grades</p>
+                                </>
+                            )}
+                        </div>
 
-                                {/* Grades Cards Grid - Horizontal Scroll on Mobile */}
-                                {subjectsWithMarks.length > 0 ? (
-                                    <div className="opacity-0 animate-blur-in delay-200">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                            {subjectsWithMarks.map((subject, i) => {
-                                                const targetGrade = targetGrades[subject.subjectCode] || 'A';
-                                                const requiredEndSem = calculateRequiredEndSem(subject.totalMarks, targetGrade);
-                                                const maxEndSem = department === 'ENT' ? 75 : 100;
-                                                const isPossible = requiredEndSem <= maxEndSem;
-                                                const gradeInfo = GRADES.find(g => g.grade === targetGrade) || GRADES[2];
+                        {/* Grades Cards Grid - Mobile Optimized */}
+                        {subjectsWithMarks.length > 0 ? (
+                            <div className="opacity-0 animate-blur-in delay-200">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                                    {subjectsWithMarks.map((subject, i) => {
+                                        const targetGrade = targetGrades[subject.subjectCode] || 'A';
+                                        const requiredEndSem = calculateRequiredEndSem(subject.totalMarks, targetGrade);
+                                        const maxEndSem = department === 'ENT' ? 75 : 100;
+                                        const isPossible = requiredEndSem <= maxEndSem;
+                                        const gradeInfo = GRADES.find(g => g.grade === targetGrade) || GRADES[2];
+                                        const percentage = subject.maxTotalMarks > 0 ? (subject.totalMarks / subject.maxTotalMarks) * 100 : 0;
 
-                                                return (
-                                                    <div
-                                                        key={`grade-${subject.subjectCode}-${i}`}
-                                                        className="bg-surface border border-border rounded-xl p-4"
-                                                    >
-                                                        {/* Header */}
-                                                        <div className="flex justify-between items-start mb-3">
-                                                            <div className="flex-1 min-w-0 mr-2">
-                                                                <h3 className="font-semibold text-white text-sm truncate">
-                                                                    {subject.subjectName}
-                                                                </h3>
-                                                                <p className="text-xs text-textMuted">{subject.subjectCode}</p>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <span className="text-xs text-textMuted">{subject.totalMarks.toFixed(0)}</span>
-                                                                <span className="text-textMuted/50 mx-1">/</span>
-                                                                <span className="text-base font-bold text-white">{subject.maxTotalMarks}</span>
-                                                            </div>
-                                                        </div>
+                                        // Color coding
+                                        const borderColor = percentage >= 80 ? 'border-emerald-500/30' : percentage >= 60 ? 'border-yellow-500/30' : 'border-red-500/30';
+                                        const bgColor = percentage >= 80 ? 'bg-emerald-950/40' : percentage >= 60 ? 'bg-yellow-950/40' : 'bg-red-950/40';
 
-                                                        {/* Internal Display */}
-                                                        <div className="flex justify-between text-sm mb-3 pb-3 border-b border-border">
-                                                            <span className="text-textMuted">Internal</span>
-                                                            <span className="text-white">{subject.totalMarks.toFixed(2)} / {subject.maxTotalMarks}</span>
-                                                        </div>
-
-                                                        {/* Grade Selector */}
-                                                        <div className="mb-3">
-                                                            <div className="flex justify-between text-[10px] text-textMuted mb-1">
-                                                                {['C', 'B', 'B+', 'A', 'A+', 'O'].map((g) => (
-                                                                    <span
-                                                                        key={g}
-                                                                        className={`cursor-pointer ${targetGrade === g ? gradeInfo.color + ' font-bold' : ''}`}
-                                                                        onClick={() => setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: g }))}
-                                                                    >
-                                                                        {g}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min="0"
-                                                                max="5"
-                                                                value={['C', 'B', 'B+', 'A', 'A+', 'O'].indexOf(targetGrade)}
-                                                                onChange={(e) => {
-                                                                    const grades = ['C', 'B', 'B+', 'A', 'A+', 'O'];
-                                                                    setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: grades[parseInt(e.target.value)] }));
-                                                                }}
-                                                                className="w-full h-1.5 bg-surfaceHighlight rounded-full appearance-none cursor-pointer slider-thumb"
-                                                            />
-                                                        </div>
-
-                                                        {/* Goal for End Sem */}
-                                                        <div className="flex justify-between items-center p-2.5 rounded-lg bg-background border border-border">
-                                                            <span className="text-sm text-textMuted">Goal end sem</span>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`font-bold ${isPossible ? 'text-white' : 'text-red-400'}`}>
-                                                                    {requiredEndSem.toFixed(0)}
-                                                                </span>
-                                                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${isPossible ? gradeInfo.bg + ' text-white' : 'bg-red-600 text-white'
-                                                                    }`}>
-                                                                    {isPossible ? '100' : '!'}
-                                                                </span>
-                                                            </div>
+                                        return (
+                                            <div
+                                                key={`grade-${subject.subjectCode}-${i}`}
+                                                className={`relative p-5 rounded-2xl border-2 ${borderColor} ${bgColor} transition-all duration-300`}
+                                            >
+                                                {/* Header: Subject + Current Marks */}
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <div className="flex-1 min-w-0 mr-3">
+                                                        <h3 className="text-lg font-bold text-white leading-tight mb-1.5">
+                                                            {subject.subjectName}
+                                                        </h3>
+                                                        <div className="px-2 py-1 rounded-md bg-black/30 text-[11px] text-white/60 font-medium inline-block">
+                                                            {subject.subjectCode}
                                                         </div>
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
-                                        <p className="text-textMuted mb-6">No marks data. Fetch marks first to use Grade Predictor.</p>
-                                        <button onClick={() => setActiveTab('marks')} className="bg-[#EEEEF0] text-black px-6 py-3 rounded-full font-medium hover:bg-white transition-colors">
-                                            Go to Marks →
-                                        </button>
-                                    </div>
-                                )}
-                            </>
+
+                                                    {/* Internal Marks - Large */}
+                                                    <div className="text-right">
+                                                        <div className="text-3xl font-black text-white leading-none">
+                                                            {subject.totalMarks.toFixed(0)}
+                                                            <span className="text-xl text-white/40">/{subject.maxTotalMarks}</span>
+                                                        </div>
+                                                        <div className="text-xs text-white/40 mt-1">Internal</div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Target Grade Selector - BIG TOUCH TARGETS */}
+                                                <div className="mb-5">
+                                                    <div className="text-white/50 text-xs font-medium mb-3">Target Grade</div>
+
+                                                    {/* Grade Pills - Mobile Friendly */}
+                                                    <div className="grid grid-cols-6 gap-2 mb-3">
+                                                        {['C', 'B', 'B+', 'A', 'A+', 'O'].map((g) => (
+                                                            <button
+                                                                key={g}
+                                                                onClick={() => setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: g }))}
+                                                                className={`py-2 rounded-lg font-bold text-sm transition-all ${targetGrade === g
+                                                                    ? `${gradeInfo.bg} text-white scale-110 shadow-lg`
+                                                                    : 'bg-white/5 text-white/40 hover:bg-white/10'
+                                                                    }`}
+                                                            >
+                                                                {g}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* BIG Slider for Mobile */}
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="5"
+                                                        value={['C', 'B', 'B+', 'A', 'A+', 'O'].indexOf(targetGrade)}
+                                                        onChange={(e) => {
+                                                            const grades = ['C', 'B', 'B+', 'A', 'A+', 'O'];
+                                                            setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: grades[parseInt(e.target.value)] }));
+                                                        }}
+                                                        className="w-full h-3 bg-white/10 rounded-full appearance-none cursor-pointer"
+                                                    />
+                                                </div>
+
+                                                {/* Required End Sem Score - Prominent */}
+                                                <div className={`p-4 rounded-xl border-2 ${isPossible ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/15 border-red-500/30'
+                                                    }`}>
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <div className="text-white/50 text-xs font-medium mb-1">End Sem Needed</div>
+                                                            <div className={`text-2xl font-black ${isPossible ? 'text-emerald-300' : 'text-red-300'}`}>
+                                                                {requiredEndSem.toFixed(0)}
+                                                                <span className="text-sm text-white/40 font-normal"> / {maxEndSem}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className={`px-3 py-2 rounded-lg ${gradeInfo.bg} text-white font-black text-lg`}>
+                                                            {isPossible ? targetGrade : '!'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
+                                <p className="text-textMuted mb-6">No marks data. Fetch marks first to use Grade Predictor.</p>
+                                <button onClick={() => setActiveTab('marks')} className="bg-[#EEEEF0] text-black px-6 py-3 rounded-full font-medium hover:bg-white transition-colors">
+                                    Go to Marks →
+                                </button>
+                            </div>
                         )}
                     </div>
                 )
@@ -539,14 +540,64 @@ export default function Dashboard() {
                 </p>
             </footer>
 
-            <InstallPrompt />
+            {/* Mobile Bottom Navigation */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-lg border-t border-border z-40 safe-area-inset-bottom">
+                <div className="flex items-center justify-around px-4 py-3">
+                    <button
+                        onClick={() => setActiveTab('attendance')}
+                        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${activeTab === 'attendance' ? 'text-primary' : 'text-textMuted'
+                            }`}
+                    >
+                        <BarChart3 size={22} strokeWidth={activeTab === 'attendance' ? 2.5 : 2} />
+                        <span className={`text-[10px] font-medium ${activeTab === 'attendance' ? 'font-bold' : ''}`}>
+                            Attendance
+                        </span>
+                    </button>
+
+                    <button
+                        onClick={() => setActiveTab('marks')}
+                        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${activeTab === 'marks' ? 'text-primary' : 'text-textMuted'
+                            }`}
+                    >
+                        <FileText size={22} strokeWidth={activeTab === 'marks' ? 2.5 : 2} />
+                        <span className={`text-[10px] font-medium ${activeTab === 'marks' ? 'font-bold' : ''}`}>
+                            Marks
+                        </span>
+                    </button>
+
+                    <button
+                        onClick={() => setActiveTab('grades')}
+                        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${activeTab === 'grades' ? 'text-primary' : 'text-textMuted'
+                            }`}
+                    >
+                        <Award size={22} strokeWidth={activeTab === 'grades' ? 2.5 : 2} />
+                        <span className={`text-[10px] font-medium ${activeTab === 'grades' ? 'font-bold' : ''}`}>
+                            What-If
+                        </span>
+                    </button>
+                </div>
+            </nav>
+
+            {/* Share Card Modal */}
+            {showShareCard && (
+                <AttendanceCard
+                    studentName={data.studentName || 'Student'}
+                    registrationNumber={data.registrationNumber || ''}
+                    overallPercentage={overallPercentage}
+                    totalSubjects={data.records.length}
+                    onClose={() => setShowShareCard(false)}
+                />
+            )}
+
         </div>
     );
 }
 
-// Subject Card for Attendance
+// Subject Card for Attendance - Mobile-First with Consumer Psychology
 function SubjectCard({ record }: { record: AttendanceRecord; department: string }) {
-    const isSafe = record.percentage >= 75;
+    const percentage = record.percentage || 0;
+    const isSafe = percentage >= 75;
+    const isExcellent = percentage >= 85;
 
     const calculateCanMiss = () => {
         const { attendedHours, totalHours } = record;
@@ -560,110 +611,133 @@ function SubjectCard({ record }: { record: AttendanceRecord; department: string 
         return Math.max(0, Math.ceil((0.75 * totalHours - attendedHours) / 0.25));
     };
 
-    return (
-        <div className="group relative p-4 bg-[#09090b] border border-white/5 rounded-xl hover:border-white/10 transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,0,0,0.4)] overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
+    const canMiss = calculateCanMiss();
+    const needToAttend = calculateNeedToAttend();
 
-            <div className="relative flex justify-between items-start mb-3">
-                <div className="flex-1 min-w-0 mr-4">
-                    <h3 className="font-medium text-white text-base truncate leading-snug tracking-wide">{record.subjectName}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                        <span className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/5 text-[10px] text-white/50 font-mono tracking-wider">
+    // Color psychology - SOLID backgrounds, no glass
+    const bgColor = isExcellent ? 'bg-emerald-950/40' : isSafe ? 'bg-green-950/40' : 'bg-red-950/40';
+    const borderColor = isExcellent ? 'border-emerald-500/30' : isSafe ? 'border-green-500/30' : 'border-red-500/30';
+    const textColor = isExcellent ? 'text-emerald-400' : isSafe ? 'text-green-400' : 'text-red-400';
+    const barColor = isExcellent ? 'bg-emerald-500' : isSafe ? 'bg-green-500' : 'bg-red-500';
+
+    return (
+        <div className={`relative p-5 rounded-2xl border-2 ${borderColor} ${bgColor} transition-all duration-300 active:scale-[0.98]`}>
+            {/* Top Row: Subject Name + Huge Percentage */}
+            <div className="flex items-start justify-between mb-4">
+                <div className="flex-1 min-w-0 mr-3">
+                    <h3 className="text-lg font-bold text-white leading-tight mb-1.5">
+                        {record.subjectName}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 rounded-md bg-black/30 text-[11px] text-white/60 font-medium">
                             {record.subjectCode}
                         </span>
                         {record.category && (
-                            <span className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/5 text-[10px] text-white/40">
+                            <span className="text-[11px] text-white/40">
                                 {record.category}
                             </span>
                         )}
                     </div>
                 </div>
-                <div className="text-right">
-                    <div className="text-3xl font-bold tracking-tighter text-white">
-                        {record.percentage?.toFixed(0)}%
+
+                {/* HUGE Percentage - Psychology: Largest element = most important */}
+                <div className={`text-5xl font-black ${textColor} leading-none`}>
+                    {percentage.toFixed(0)}
+                    <span className="text-2xl">%</span>
+                </div>
+            </div>
+
+            {/* Progress Bar - Thick & Clear */}
+            <div className="relative w-full h-3 bg-white/5 rounded-full overflow-hidden mb-4">
+                <div
+                    className={`absolute inset-y-0 left-0 rounded-full ${barColor} transition-all duration-700 ease-out`}
+                    style={{ width: `${Math.min(100, percentage)}%` }}
+                />
+                {/* 75% Threshold Marker */}
+                <div className="absolute top-0 bottom-0 w-1 bg-white/30" style={{ left: '75%' }} />
+            </div>
+
+            {/* Bottom Row: Hours + Action (Psychology: Clear CTA) */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <div className="text-white/40 text-xs font-medium mb-0.5">Attended</div>
+                    <div className="text-white text-base font-bold">
+                        {record.attendedHours}
+                        <span className="text-white/30 font-normal"> / {record.totalHours}</span>
                     </div>
                 </div>
-            </div>
 
-            <div className="relative w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-3">
-                <div
-                    className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${isSafe ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' : 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.4)]'}`}
-                    style={{ width: `${Math.min(100, record.percentage)}%` }}
-                ></div>
-                {/* 75% Marker */}
-                <div className="absolute top-0 bottom-0 w-0.5 bg-white/20 z-10" style={{ left: '75%' }}></div>
-            </div>
 
-            <div className="flex justify-between items-end">
-                <div className="flex flex-col">
-                    <span className="text-[10px] uppercase tracking-wider text-white/30 font-semibold mb-0.5">Status</span>
-                    <span className="text-sm text-textMuted font-medium">
-                        <span className="text-white">{record.attendedHours}</span> <span className="text-white/30">/</span> {record.totalHours} hrs
-                    </span>
-                </div>
-                <div className={`px-3 py-1.5 rounded-lg border ${isSafe ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                    <span className="text-xs font-bold whitespace-nowrap">
-                        {isSafe ? `${calculateCanMiss()} can miss` : `${calculateNeedToAttend()} needed`}
-                    </span>
+                {/* Psychology: Action-oriented text in colored pill */}
+                <div className={`px-4 py-2.5 rounded-xl ${isSafe ? 'bg-emerald-500/15' : 'bg-red-500/15'} border-2 ${isSafe ? 'border-emerald-500/30' : 'border-red-500/30'}`}>
+                    <div className={`text-sm font-black ${isSafe ? 'text-emerald-300' : 'text-red-300'} whitespace-nowrap`}>
+                        {isSafe ? (
+                            <>✓ Safe to miss {canMiss}</>
+                        ) : (
+                            <>! Need {needToAttend} more</>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
 
-// Marks Card
+// Marks Card - Mobile First
 function MarksCard({ subject }: { subject: SubjectMarks }) {
     const percentage = subject.maxTotalMarks > 0 ? (subject.totalMarks / subject.maxTotalMarks) * 100 : 0;
 
-    const getColor = (pct: number) => {
-        if (pct >= 80) return 'text-emerald-400';
-        if (pct >= 60) return 'text-yellow-400';
-        if (pct >= 40) return 'text-orange-400';
-        return 'text-red-400';
-    };
-
-    const getGlowColor = (pct: number) => {
-        if (pct >= 80) return 'shadow-[0_0_12px_rgba(52,211,153,0.4)] bg-emerald-500';
-        if (pct >= 60) return 'shadow-[0_0_12px_rgba(250,204,21,0.4)] bg-yellow-500';
-        if (pct >= 40) return 'shadow-[0_0_12px_rgba(251,146,60,0.4)] bg-orange-500';
-        return 'shadow-[0_0_12px_rgba(248,113,113,0.4)] bg-red-500';
-    };
+    // Color psychology
+    const isExcellent = percentage >= 80;
+    const isGood = percentage >= 60;
+    const bgColor = isExcellent ? 'bg-emerald-950/40' : isGood ? 'bg-yellow-950/40' : 'bg-red-950/40';
+    const borderColor = isExcellent ? 'border-emerald-500/30' : isGood ? 'border-yellow-500/30' : 'border-red-500/30';
+    const textColor = isExcellent ? 'text-emerald-400' : isGood ? 'text-yellow-400' : 'text-red-400';
+    const barColor = isExcellent ? 'bg-emerald-500' : isGood ? 'bg-yellow-500' : 'bg-red-500';
 
     return (
-        <div className="group relative p-4 bg-[#09090b] border border-white/5 rounded-xl hover:border-white/10 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,0,0,0.4)] overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
-
-            <div className="relative flex justify-between items-start mb-3">
-                <div className="flex-1 min-w-0 mr-4">
-                    <h3 className="font-medium text-white text-base truncate leading-snug tracking-wide">{subject.subjectName}</h3>
-                    <p className="text-[11px] text-white/40 mt-0.5 font-mono">{subject.subjectCode}</p>
-                </div>
-                <div className="text-right">
-                    <div className={`text-3xl font-bold tracking-tighter ${getColor(percentage)}`}>
-                        {percentage.toFixed(0)}%
+        <div className={`relative p-5 rounded-2xl border-2 ${borderColor} ${bgColor} transition-all duration-300`}>
+            {/* Top Row: Subject Name + Huge Percentage */}
+            <div className="flex items-start justify-between mb-4">
+                <div className="flex-1 min-w-0 mr-3">
+                    <h3 className="text-lg font-bold text-white leading-tight mb-1.5">
+                        {subject.subjectName}
+                    </h3>
+                    <div className="px-2 py-1 rounded-md bg-black/30 text-[11px] text-white/60 font-medium inline-block">
+                        {subject.subjectCode}
                     </div>
                 </div>
-            </div>
 
-            <div className="relative w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
-                <div
-                    className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${getGlowColor(percentage)}`}
-                    style={{ width: `${Math.min(100, percentage)}%` }}
-                ></div>
-            </div>
-
-            <div className="flex justify-between items-end border-t border-white/5 pt-4">
-                <div className="flex flex-col">
-                    <span className="text-[10px] uppercase tracking-wider text-white/30 font-semibold mb-0.5">Scored</span>
-                    <span className="text-lg font-bold text-white tracking-tight">
-                        {subject.totalMarks.toFixed(1)}
-                    </span>
+                {/* HUGE Percentage */}
+                <div className={`text-5xl font-black ${textColor} leading-none`}>
+                    {percentage.toFixed(0)}
+                    <span className="text-2xl">%</span>
                 </div>
-                <div className="flex flex-col items-end">
-                    <span className="text-[10px] uppercase tracking-wider text-white/30 font-semibold mb-0.5">Total</span>
-                    <span className="text-lg font-medium text-white/60">
-                        / {subject.maxTotalMarks}
-                    </span>
+            </div>
+
+            {/* Progress Bar - Thick */}
+            <div className="relative w-full h-3 bg-white/5 rounded-full overflow-hidden mb-4">
+                <div
+                    className={`absolute inset-y-0 left-0 rounded-full ${barColor} transition-all duration-700 ease-out`}
+                    style={{ width: `${Math.min(100, percentage)}%` }}
+                />
+            </div>
+
+            {/* Bottom Row: Marks */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <div className="text-white/40 text-xs font-medium mb-0.5">Scored</div>
+                    <div className="text-white text-2xl font-bold">
+                        {subject.totalMarks.toFixed(1)}
+                        <span className="text-white/30 font-normal text-base"> / {subject.maxTotalMarks}</span>
+                    </div>
+                </div>
+
+                {/* Status Badge */}
+                <div className={`px-4 py-2 rounded-xl ${isExcellent ? 'bg-emerald-500/15 border-2 border-emerald-500/30' : isGood ? 'bg-yellow-500/15 border-2 border-yellow-500/30' : 'bg-red-500/15 border-2 border-red-500/30'}`}>
+                    <div className={`text-sm font-black ${isExcellent ? 'text-emerald-300' : isGood ? 'text-yellow-300' : 'text-red-300'}`}>
+                        {isExcellent ? '✓ Excellent' : isGood ? '○ Good' : '! Low'}
+                    </div>
                 </div>
             </div>
         </div>
