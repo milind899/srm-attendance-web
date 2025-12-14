@@ -389,69 +389,68 @@ export class FshClient {
         try {
             await this.restoreCookies(cookieStr);
 
-            // Fetch the dashboard/personal details page
-            const profileUrl = '/students/index.jsp';
-            console.error('[FshClient] Fetching profile page...');
-            const resp = await this.client.get(profileUrl);
+            // Fetch the dashboard page which contains profile data
+            const dashboardUrl = '/students/template/HRDSystem.jsp';
+            console.error('[FshClient] Fetching dashboard page for profile...');
+            const resp = await this.client.get(dashboardUrl);
             const $ = cheerio.load(resp.data);
 
-            // Look for Student Profile table
+            // Initialize profile object
             const profile: any = {
                 studentName: '',
                 studentId: '',
-                registrationNumber: username,
-                email: '',
+                registerNo: '',
+                emailId: '',
                 institution: '',
                 program: '',
-                semester: '',
-                section: '',
-                batch: ''
+                department: '',
+                semester: ''
             };
 
-            // Parse table rows looking for profile data
-            // SRM sometimes uses nested tables, so we just look at all TRs
-            $('tr').each((_, row) => {
-                const cells = $(row).find('td');
-                if (cells.length >= 2) {
-                    const label = $(cells[0]).text().trim().toLowerCase().replace(/[:.]/g, '');
-                    const value = $(cells[1]).text().trim();
+            // Look for "Student Profile" section in the dashboard
+            // The data is typically in a card/panel with label-value pairs
+            $('body').find('*').each((_, elem) => {
+                const text = $(elem).text().trim();
 
-                    if (!value) return;
+                // Check if this element or its parent contains profile labels
+                if (text.includes('Student Name') || text.includes('Student ID') ||
+                    text.includes('Register No') || text.includes('Email ID')) {
 
-                    if (label.includes('student name') || label === 'name') {
-                        profile.studentName = value;
-                    } else if (label.includes('student id') || label === 'id') {
-                        profile.studentId = value;
-                    } else if (label.includes('register') || label.includes('reg no')) {
-                        profile.registrationNumber = value;
-                    } else if (label.includes('email')) {
-                        profile.email = value;
-                    } else if (label.includes('program') || label.includes('course')) {
-                        profile.program = value;
-                    } else if (label.includes('semester')) {
-                        profile.semester = value;
-                    } else if (label.includes('section')) {
-                        profile.section = value;
-                    } else if (label.includes('batch')) {
-                        profile.batch = value;
-                    }
+                    // Find the parent container
+                    const parent = $(elem).closest('div, table, section');
+
+                    // Extract data from label-value pairs
+                    parent.find('*').each((_, child) => {
+                        const childText = $(child).text().trim();
+                        const nextText = $(child).next().text().trim();
+
+                        if (childText.includes('Student Name') && nextText) {
+                            profile.studentName = nextText;
+                        } else if (childText.includes('Student ID') && nextText) {
+                            profile.studentId = nextText;
+                        } else if (childText.includes('Register No') && nextText) {
+                            profile.registerNo = nextText;
+                        } else if (childText.includes('Email ID') && nextText) {
+                            profile.emailId = nextText;
+                        } else if (childText.includes('Institution') && nextText) {
+                            profile.institution = nextText;
+                        } else if (childText.includes('Program') && nextText) {
+                            profile.program = nextText;
+                        }
+                    });
                 }
             });
 
-            // Extract program from page if not found
-            const pageText = $('body').text();
-            if (!profile.program) {
-                const programMatch = pageText.match(/B\.?Tech|B\.?B\.?A|M\.?Tech|M\.?B\.?A/i);
-                if (programMatch) profile.program = programMatch[0];
-            }
+            // Fallback: Try to extract from any text pattern matching
+            const bodyText = $('body').text();
+
+            // Extract Student Name if not found
             if (!profile.studentName) {
-                // Try finding Welcome message
-                const welcome = $(':contains("Welcome")').last().text();
-                const match = welcome.match(/Welcome\s+(.+?)\s*\(/i);
-                if (match) profile.studentName = match[1].trim();
+                const nameMatch = bodyText.match(/Student Name\s*[:\-]?\s*([A-Z\s]+)(?=\s*Student ID)/i);
+                if (nameMatch) profile.studentName = nameMatch[1].trim();
             }
 
-            console.error('[FshClient] Profile parsed:', profile);
+            console.error('[FshClient] Profile extracted:', profile);
 
             return {
                 success: true,

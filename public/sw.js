@@ -2,6 +2,8 @@ const CACHE_NAME = 'attendx-v1';
 const STATIC_ASSETS = [
     '/',
     '/logo.png',
+    '/icon-192.png',
+    '/icon-512.png',
     '/manifest.json'
 ];
 

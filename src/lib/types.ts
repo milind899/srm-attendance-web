@@ -9,6 +9,18 @@ export interface AttendanceRecord {
     classesToAttend?: number;
 }
 
+// Profile Data
+export interface ProfileData {
+    studentName: string;
+    studentId: string;
+    registerNo: string;
+    emailId: string;
+    institution: string;
+    program: string;
+    department?: string;
+    semester?: string;
+}
+
 export interface AttendanceData {
     studentName: string;
     registrationNumber: string;

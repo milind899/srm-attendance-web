@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 import { AttendanceData, AttendanceRecord, InternalMarksData, SubjectMarks } from '@/lib/types';
 import { DecryptText } from '@/components/DecryptText';
-import { Loader2, Share2, BarChart3, Award, FileText, RefreshCw } from 'lucide-react';
+import { Loader2, Share2, BarChart3, Award, FileText, RefreshCw, User, CalendarCheck, ClipboardList, GraduationCap } from 'lucide-react';
 import AttendanceCard from '@/components/AttendanceCard';
 
 type Tab = 'attendance' | 'marks' | 'grades';
@@ -113,7 +113,8 @@ export default function Dashboard() {
     }, [router]);
 
     const fetchInternalMarks = async () => {
-        const cookies = localStorage.getItem('sessionCookies');
+        const dept = localStorage.getItem('department') || 'FSH';
+        const cookies = localStorage.getItem(`${dept.toLowerCase()}Cookies`);
         const username = localStorage.getItem('username');
 
         if (!cookies || !username) {
@@ -148,10 +149,10 @@ export default function Dashboard() {
     };
 
     const handleRefresh = async () => {
+        const dept = localStorage.getItem('department') || 'ENT';
         const username = localStorage.getItem('username');
         const password = localStorage.getItem('password');
-        const cookies = localStorage.getItem('sessionCookies');
-        const dept = localStorage.getItem('department') || 'ENT';
+        const cookies = localStorage.getItem(`${dept.toLowerCase()}Cookies`);
 
         if (!username) {
             setMarksError('Session expired. Redirecting to login...');
@@ -209,14 +210,40 @@ export default function Dashboard() {
                 // Show success toast
                 showToastNotification('Data refreshed successfully! ✓', 'success');
             } else {
-                throw new Error(result.error || 'Failed to refresh data');
+                // Check if it's a session expiration error
+                const errorMsg = result.error || 'Failed to refresh data';
+                const isSessionError = errorMsg.toLowerCase().includes('session') ||
+                    errorMsg.toLowerCase().includes('login') ||
+                    errorMsg.toLowerCase().includes('invalid') ||
+                    errorMsg.toLowerCase().includes('expired') ||
+                    errorMsg.toLowerCase().includes('credentials');
+
+                if (isSessionError) {
+                    showToastNotification('Session expired. Please login again.', 'error');
+                    setMarksError('Your session has expired. Redirecting to login...');
+                    // Clear stored data
+                    localStorage.removeItem('sessionCookies');
+                    localStorage.removeItem('csrf');
+                    // Redirect after 2 seconds
+                    setTimeout(() => {
+                        router.push(`/login?dept=${dept}`);
+                    }, 2000);
+                } else {
+                    throw new Error(errorMsg);
+                }
             }
         } catch (err: any) {
-            showToastNotification(err.message || 'Failed to refresh. Please try logging in again.', 'error');
-            setMarksError(err.message || 'Failed to refresh. Please try logging in again.');
-            // If session expired, redirect to login after a short delay
-            if (err.message?.includes('expired') || err.message?.includes('Session')) {
-                setTimeout(() => router.push(`/login?dept=${dept}`), 2000);
+            const errorMessage = err.message || 'Failed to refresh. Please try logging in again.';
+            showToastNotification(errorMessage, 'error');
+            setMarksError(errorMessage);
+
+            // If it looks like a session error, redirect to login
+            if (errorMessage.toLowerCase().includes('session') ||
+                errorMessage.toLowerCase().includes('expired') ||
+                errorMessage.toLowerCase().includes('invalid')) {
+                setTimeout(() => {
+                    router.push(`/login?dept=${dept}`);
+                }, 2000);
             }
         } finally {
             setIsRefreshing(false);
@@ -303,7 +330,7 @@ export default function Dashboard() {
     });
 
     return (
-        <div className="min-h-screen bg-background text-textMain selection:bg-primary/30 selection:text-white font-sans animate-scale-in origin-center overflow-x-hidden">
+        <>
             {/* Background Glow Effects - like homepage */}
             <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-glow-gradient opacity-40 pointer-events-none z-0" />
             <div className="fixed top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none z-0" />
@@ -311,9 +338,9 @@ export default function Dashboard() {
             {/* Navbar */}
             <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-white/10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2">
-                        <img src="/logo.png" alt="AttendX" className="w-8 h-8" />
-                        <span className="font-semibold text-lg tracking-tight text-textMain">AttendX</span>
+                    <Link href="/" className="flex items-center gap-3">
+                        <img src="/logo.png" alt="AttendX" className="w-10 h-10 rounded-xl shadow-lg shadow-indigo-500/20" />
+                        <span className="font-bold text-xl tracking-tight text-white/90">AttendX</span>
                     </Link>
 
                     {/* Desktop Tabs */}
@@ -333,16 +360,6 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {/* Refresh Button */}
-                        <button
-                            onClick={handleRefresh}
-                            disabled={isRefreshing}
-                            className={`flex items-center justify-center p-3 sm:p-2 rounded-full bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-min ${isRefreshing ? 'animate-spin' : ''}`}
-                            title="Refresh Data"
-                        >
-                            <RefreshCw size={22} className="sm:w-[18px] sm:h-[18px]" />
-                        </button>
-
                         {/* Share Button */}
                         <button
                             onClick={() => setShowShareCard(true)}
@@ -351,6 +368,8 @@ export default function Dashboard() {
                         >
                             <Share2 size={22} className="sm:w-[18px] sm:h-[18px]" />
                         </button>
+
+
 
                         <span className="text-sm text-textMuted hidden sm:block">{data.studentName || 'Student'}</span>
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent-yellow flex items-center justify-center text-white text-sm font-bold">
@@ -374,79 +393,76 @@ export default function Dashboard() {
                 </div>
             </nav>
 
-            {/* Mobile Tab Bar - Top Sticky */}
-            <div className="md:hidden fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border px-4 py-3">
-                <div className="flex bg-surface p-1.5 rounded-lg gap-1">
-                    {(['attendance', 'marks', 'grades'] as Tab[]).map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-3 text-sm font-medium rounded-md transition-all touch-min ${activeTab === tab
-                                ? 'bg-primary/20 text-white shadow-sm'
-                                : 'text-textMuted hover:text-white'
-                                }`}
-                        >
-                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                        </button>
-                    ))}
+            {/* Minimal Refresh Notice */}
+            <div className="fixed top-16 left-0 right-0 z-40 bg-background/80 border-b border-border/50 backdrop-blur-sm">
+                <div className="max-w-7xl mx-auto px-4 py-1.5">
+                    <p className="text-xs text-textMuted text-center">
+                        To refresh data, <Link href="/login" className="text-primary hover:underline">login again</Link>
+                    </p>
                 </div>
             </div>
 
-            <main className="relative z-10 pt-36 md:pt-24 pb-10">
+            <main className="min-h-screen bg-background text-textMain selection:bg-primary/30 selection:text-white font-sans overflow-x-hidden relative z-10 pt-28 md:pt-32 pb-32 md:pb-10 animate-scale-in origin-center">
                 {/* Attendance Tab */}
                 {activeTab === 'attendance' && (
                     <div className="max-w-6xl mx-auto px-4">
-                        {/* Overall Attendance Banner - Enhanced */}
-                        <div className="mb-8 opacity-0 animate-blur-in">
-                            <div className={`relative overflow-hidden rounded-2xl p-6 sm:p-8 border-2 ${overallPercentage >= 75
-                                ? 'bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent border-green-500/30'
-                                : 'bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent border-red-500/30'
+                        {/* Overall Attendance - Premium Design */}
+                        <div className="mb-10 opacity-0 animate-blur-in">
+                            <div className={`relative overflow-hidden rounded-3xl p-8 sm:p-12 border-4 shadow-2xl ${overallPercentage >= 75
+                                ? 'bg-gradient-to-br from-green-600/25 via-green-500/15 to-transparent border-green-400/50'
+                                : 'bg-gradient-to-br from-red-600/25 via-red-500/15 to-transparent border-red-400/50'
                                 }`}>
                                 {/* Background Decoration */}
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-radial from-white/5 to-transparent blur-3xl pointer-events-none"></div>
 
-                                <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                    {/* Left Side: Percentage & Info */}
-                                    <div className="flex items-center gap-4 sm:gap-6">
-                                        {/* Giant Percentage */}
-                                        <div className={`text-6xl sm:text-7xl font-black leading-none ${overallPercentage >= 75 ? 'text-green-400' : 'text-red-400'
-                                            }`}>
-                                            {overallPercentage}
-                                            <span className="text-3xl sm:text-4xl">%</span>
+                                <div className="relative flex flex-col sm:flex-row items-center justify-between gap-8">
+                                    {/* Left: Giant Stats */}
+                                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                                        {/* Massive Percentage with Glow */}
+                                        <div className="relative">
+                                            <div className={`text-7xl sm:text-8xl font-black leading-none drop-shadow-2xl ${overallPercentage >= 75 ? 'text-green-300' : 'text-red-300'
+                                                }`}>
+                                                <span className={overallPercentage >= 75 ? 'text-green-300' : 'text-red-300'}>
+                                                    <DecryptText text={String(overallPercentage)} speed={100} delay={500} />
+                                                </span>
+                                                <span className="text-4xl sm:text-5xl">%</span>
+                                            </div>
+                                            <div className={`absolute inset-0 blur-3xl opacity-40 ${overallPercentage >= 75 ? 'bg-green-400' : 'bg-red-400'
+                                                }`}></div>
                                         </div>
 
-                                        {/* Divider */}
-                                        <div className={`hidden sm:block w-px h-16 ${overallPercentage >= 75 ? 'bg-green-500/20' : 'bg-red-500/20'
+                                        {/* Thick Divider */}
+                                        <div className={`hidden sm:block w-1 h-24 rounded-full shadow-lg ${overallPercentage >= 75 ? 'bg-green-400/40' : 'bg-red-400/40'
                                             }`}></div>
 
                                         {/* Details */}
-                                        <div className="flex flex-col gap-1">
-                                            <div className="text-base sm:text-lg font-semibold text-white/90">
-                                                Overall
+                                        <div className="flex flex-col gap-2 text-center sm:text-left">
+                                            <div className="text-xl sm:text-2xl font-bold text-white/95">
+                                                Overall Attendance
                                             </div>
-                                            <div className="text-sm text-white/50">
-                                                {attendedHours} / {totalHours} hrs
+                                            <div className="text-base sm:text-lg text-white/60">
+                                                {attendedHours} / {totalHours} hours
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Right Side: Safe/Need Badge */}
-                                    <div className={`flex items-center gap-2 px-4 sm:px-6 py-3 rounded-full border-2 ${overallPercentage >= 75
-                                        ? 'bg-green-500/10 border-green-500/30 text-green-300'
-                                        : 'bg-red-500/10 border-red-500/30 text-red-300'
+                                    {/* Premium Status Badge */}
+                                    <div className={`flex items-center gap-3 px-6 sm:px-8 py-4 rounded-2xl border-3 backdrop-blur-md shadow-xl ${overallPercentage >= 75
+                                        ? 'bg-green-500/25 border-green-300/50 text-green-100'
+                                        : 'bg-red-500/25 border-red-300/50 text-red-100'
                                         }`}>
-                                        <span className="text-lg sm:text-xl font-bold">
-                                            {overallPercentage >= 75 ? '✓' : '!'}
+                                        <span className="text-2xl sm:text-3xl font-bold">
+                                            {overallPercentage >= 75 ? '✓' : '⚠'}
                                         </span>
-                                        <div className="flex flex-col gap-0.5">
-                                            <span className="text-sm sm:text-base font-semibold whitespace-nowrap">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-base sm:text-lg font-bold whitespace-nowrap">
                                                 {overallPercentage >= 75
                                                     ? `Safe ${department === 'FSH' ? Math.max(0, overallCanMiss) : ''}`
                                                     : `Need ${department === 'FSH' ? Math.max(0, overallNeedToAttend) : '0'} more`
                                                 }
                                             </span>
                                             {overallPercentage >= 75 && department === 'FSH' && (
-                                                <span className="text-xs text-green-300/70">
+                                                <span className="text-sm text-green-100/80">
                                                     Can miss {Math.max(0, overallCanMiss)} {Math.max(0, overallCanMiss) === 1 ? 'class' : 'classes'}
                                                 </span>
                                             )}
@@ -470,18 +486,14 @@ export default function Dashboard() {
                 {/* Marks Tab */}
                 {activeTab === 'marks' && (
                     <div className="max-w-6xl mx-auto px-4">
-                        {/* Header with Animation */}
-                        <div className="text-center mb-6 opacity-0 animate-blur-in">
+                        {/* Hero Section - Mobile Optimized */}
+                        {/* Compact Header */}
+                        <div className="mb-4 opacity-0 animate-blur-in">
                             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/50 px-3 py-1.5 text-xs text-textMuted mb-4 backdrop-blur-sm">
                                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
                                 <DecryptText text="Internal Marks" speed={30} delay={200} />
                             </div>
-                        </div>
-                        {/* Hero Section - Mobile Optimized */}
-                        {/* Compact Header */}
-                        <div className="mb-4 opacity-0 animate-blur-in">
-                            <h2 className="text-2xl font-bold text-white">Internal Marks</h2>
-                            <p className="text-sm text-white/40">Tests & assignments</p>
+                            <h2 className="text-2xl font-bold text-white">Tests & Assignments</h2>
                         </div>
 
                         {department === 'ENT' ? (
@@ -550,7 +562,7 @@ export default function Dashboard() {
                             {subjectsWithMarks.length > 0 ? (
                                 <>
                                     <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-accent-yellow via-accent-yellow to-accent-yellow/60 mb-2">
-                                        <DecryptText text={calculatePredictedGPA().gpa} speed={40} delay={300} />
+                                        <DecryptText text={String(calculatePredictedGPA().gpa)} speed={40} delay={300} />
                                     </h1>
                                     <p className="text-base sm:text-lg text-textMuted mb-1">Predicted GPA</p>
                                     <p className="text-xs sm:text-sm text-textMuted/70">Based on target grades below</p>
@@ -674,14 +686,23 @@ export default function Dashboard() {
                 )
                 }
 
+                {/* Footer / Disclaimer */}
+                <footer className="py-8 text-center opacity-60 hover:opacity-100 transition-opacity">
+                    <p className="text-[10px] text-textMuted uppercase tracking-widest font-medium">
+                        Disclaimer
+                    </p>
+                    <p className="text-xs text-textMuted mt-1 max-w-sm mx-auto">
+                        This site is under active development. Attendance and marks data may not be 100% accurate or up-to-date. Please verify on the official portal.
+                    </p>
+                </footer>
             </main>
 
             {/* Toast Notification */}
             {showToast && (
-                <div className="fixed bottom-8 right-8 z-50 animate-fade-in-up">
-                    <div className={`px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 border-2 ${toastType === 'success'
-                        ? 'bg-green-500/10 border-green-500/30 text-green-300'
-                        : 'bg-red-500/10 border-red-500/30 text-red-300'
+                <div className="fixed bottom-28 left-0 right-0 z-50 animate-fade-in-up flex justify-center pointer-events-none">
+                    <div className={`mx-4 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 border-2 pointer-events-auto ${toastType === 'success'
+                        ? 'bg-[#141518] border-green-500/30 text-green-300'
+                        : 'bg-[#141518] border-red-500/30 text-red-300'
                         }`}>
                         <span className="text-2xl">
                             {toastType === 'success' ? '✓' : '✗'}
@@ -690,16 +711,6 @@ export default function Dashboard() {
                     </div>
                 </div>
             )}
-
-            {/* Footer / Disclaimer */}
-            <footer className="py-8 text-center opacity-60 hover:opacity-100 transition-opacity">
-                <p className="text-[10px] text-textMuted uppercase tracking-widest font-medium">
-                    Disclaimer
-                </p>
-                <p className="text-xs text-textMuted mt-1 max-w-sm mx-auto">
-                    This site is under active development. Attendance and marks data may not be 100% accurate or up-to-date. Please verify on the official portal.
-                </p>
-            </footer>
 
             {/* Share Card Modal */}
             {showShareCard && (
@@ -712,7 +723,41 @@ export default function Dashboard() {
                 />
             )}
 
-        </div>
+            {/* Mobile Bottom Tab Bar - Floating Pill Style */}
+            <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none md:hidden">
+                <div className="pointer-events-auto flex w-[90%] max-w-sm bg-[#141518]/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl justify-around items-center py-3 px-6 animate-fade-in-up">
+                    <button
+                        onClick={() => setActiveTab('attendance')}
+                        className={`flex flex-col items-center justify-center p-2 rounded-full transition-all duration-300 ${activeTab === 'attendance'
+                            ? 'text-primary bg-primary/20 scale-110'
+                            : 'text-textMuted hover:text-white'
+                            }`}
+                    >
+                        <CalendarCheck size={24} strokeWidth={activeTab === 'attendance' ? 2.5 : 2} />
+                    </button>
+                    <div className="w-px h-8 bg-white/10"></div>
+                    <button
+                        onClick={() => setActiveTab('marks')}
+                        className={`flex flex-col items-center justify-center p-2 rounded-full transition-all duration-300 ${activeTab === 'marks'
+                            ? 'text-primary bg-primary/20 scale-110'
+                            : 'text-textMuted hover:text-white'
+                            }`}
+                    >
+                        <ClipboardList size={24} strokeWidth={activeTab === 'marks' ? 2.5 : 2} />
+                    </button>
+                    <div className="w-px h-8 bg-white/10"></div>
+                    <button
+                        onClick={() => setActiveTab('grades')}
+                        className={`flex flex-col items-center justify-center p-2 rounded-full transition-all duration-300 ${activeTab === 'grades'
+                            ? 'text-primary bg-primary/20 scale-110'
+                            : 'text-textMuted hover:text-white'
+                            }`}
+                    >
+                        <GraduationCap size={24} strokeWidth={activeTab === 'grades' ? 2.5 : 2} />
+                    </button>
+                </div>
+            </div>
+        </>
     );
 }
 

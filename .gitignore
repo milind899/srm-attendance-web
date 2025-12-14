@@ -38,6 +38,10 @@ yarn-error.log*
 *.jpeg
 *.webp
 *.svg
+!public/*.png
+!public/*.svg
+!src/**/*.png
+!src/**/*.svg
 
 # scripts
 *.js

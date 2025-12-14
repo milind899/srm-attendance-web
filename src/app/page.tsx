@@ -25,9 +25,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="AttendX" className="w-8 h-8" />
-            <span className="font-semibold text-lg tracking-tight text-textMain">AttendX</span>
+          <Link href="/" className="flex items-center gap-3">
+            <img src="/logo.png" alt="AttendX" className="w-10 h-10 rounded-xl shadow-lg shadow-indigo-500/20" />
+            <span className="font-bold text-xl tracking-tight text-white/90">AttendX</span>
           </Link>
 
           {/* Actions */}
