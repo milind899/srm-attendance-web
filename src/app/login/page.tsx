@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ArrowRight, RotateCcw } from 'lucide-react';
 import LoginLoader from '@/components/LoginLoader';
 
 function LoginForm() {
@@ -123,7 +123,7 @@ function LoginForm() {
 
                 <div className="relative bg-surface border border-border rounded-xl shadow-2xl overflow-hidden">
                     {/* Header */}
-                    <div className="p-6 sm:p-8 pb-4 sm:pb-6 text-center">
+                    <div className="p-5 sm:p-8 pb-4 sm:pb-6 text-center">
                         <Link href="/" className="mx-auto w-20 h-20 bg-[#1C1D21] border border-border/50 rounded-2xl flex items-center justify-center mb-6 shadow-xl shadow-indigo-500/10 hover:scale-105 transition-transform duration-300">
                             <img src="/logo.png" alt="AttendX" className="w-12 h-12 rounded-xl" />
                         </Link>
@@ -163,7 +163,7 @@ function LoginForm() {
                     </div>
 
                     {/* Form Area - Now inside the card */}
-                    <div className="p-6 sm:p-8 pt-2 sm:pt-4">
+                    <div className="p-5 sm:p-8 pt-2 sm:pt-4">
                         {loading && dept === 'ENT' ? (
                             <LoginLoader />
                         ) : (
@@ -216,31 +216,37 @@ function LoginForm() {
                                     {dept === 'FSH' && (
                                         <div className="space-y-1.5">
                                             <label className="text-xs uppercase tracking-wider font-medium text-textMuted ml-1">Security Check</label>
-                                            <div className="flex gap-2">
+                                            <div className="flex gap-2 items-center">
                                                 <input
                                                     type="text"
                                                     value={captchaVal}
                                                     onChange={(e) => setCaptchaVal(e.target.value)}
                                                     autoComplete="off"
-                                                    className="flex-1 bg-[#0B0C0E] border border-border rounded-lg px-4 py-4 sm:py-3 text-base sm:text-sm text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
+                                                    className="flex-1 min-w-0 bg-[#0B0C0E] border border-border rounded-lg px-4 py-4 sm:py-3 text-base sm:text-sm text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
                                                     placeholder="Enter code"
                                                     required
                                                 />
-                                                <div className="relative group flex-shrink-0">
-                                                    {captchaImg ? (
-                                                        <div
-                                                            className="h-[60px] w-[140px] sm:h-[46px] sm:w-[120px] px-2 bg-white rounded-lg flex items-center justify-center cursor-pointer opacity-90 hover:opacity-100 transition-opacity border-2 border-transparent hover:border-primary/50 touch-min"
-                                                            onClick={fetchCaptcha}
-                                                            title="Click to refresh"
-                                                        >
-                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                            <img src={captchaImg} alt="Captcha" className="h-full w-full object-contain" />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="h-[60px] w-[140px] sm:h-[46px] sm:w-[120px] bg-white/5 rounded-lg flex items-center justify-center animate-pulse">
-                                                            <Loader2 className="w-5 h-5 sm:w-4 sm:h-4 text-textMuted animate-spin" />
-                                                        </div>
-                                                    )}
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    <div className="relative group">
+                                                        {captchaImg ? (
+                                                            <div className="h-[50px] w-[110px] sm:h-[46px] sm:w-[120px] px-2 bg-white rounded-lg flex items-center justify-center overflow-hidden border-2 border-transparent">
+                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                <img src={captchaImg} alt="Captcha" className="h-full w-full object-contain" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="h-[50px] w-[110px] sm:h-[46px] sm:w-[120px] bg-white/5 rounded-lg flex items-center justify-center animate-pulse">
+                                                                <Loader2 className="w-5 h-5 sm:w-4 sm:h-4 text-textMuted animate-spin" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={fetchCaptcha}
+                                                        className="p-3 bg-[#0B0C0E] border border-border rounded-lg text-textMuted hover:text-white hover:border-primary/50 transition-all active:scale-95 touch-min"
+                                                        title="Refresh Captcha"
+                                                    >
+                                                        <RotateCcw size={20} className="sm:w-4 sm:h-4" />
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
