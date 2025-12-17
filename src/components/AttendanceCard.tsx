@@ -105,7 +105,7 @@ export default function AttendanceCard({ studentName, registrationNumber, overal
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
-                            <img src="/logo.png" alt="AttendX" className="w-8 h-8" />
+                            <img src="/logo.png" alt="AttendX" className="w-8 h-8 rounded-lg" />
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-white">AttendX</h3>

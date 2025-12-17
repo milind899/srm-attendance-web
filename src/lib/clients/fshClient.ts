@@ -308,10 +308,11 @@ export class FshClient {
             const txt = $t.text().toLowerCase();
 
             // More flexible table detection - accept various header patterns
+            // Added 'continuous' and 'assessment' as keywords
             const looksLikeMarksTable =
                 (txt.includes('code') && (txt.includes('mark') || txt.includes('total') || txt.includes('internal'))) ||
                 (txt.includes('subject') && txt.includes('mark')) ||
-                (txt.includes('course') && txt.includes('score'));
+                (txt.includes('course') && (txt.includes('score') || txt.includes('assessment')));
 
             if (looksLikeMarksTable) {
                 $t.find('tr').each((i, row) => {
@@ -319,52 +320,81 @@ export class FshClient {
                     if (cols.length < 2) return;
 
                     const code = $(cols[0]).text().trim();
-                    if (!code || code.toLowerCase().includes('code') || code.toLowerCase().includes('subject')) return;
+                    const nameCol = $(cols[1]).text().trim();
 
-                    // Try to find name and marks from available columns
-                    let name = $(cols[1]).text().trim();
+                    // Skip header rows
+                    if (!code || code.toLowerCase().includes('code') || code.toLowerCase().includes('subject') || code.toLowerCase() === 'total') return;
+
+                    // Fallback to col[1] being code if col[0] is just a serial number
+                    let subjectCode = code;
+                    let subjectName = nameCol;
+                    let rangeStart = 2;
+
+                    // Heuristic: if col[0] is short (1-2 chars) and numeric, it might be S.No
+                    if (/^\d{1,2}$/.test(code) && cols.length > 2) {
+                        subjectCode = $(cols[1]).text().trim();
+                        subjectName = $(cols[2]).text().trim();
+                        rangeStart = 3;
+                    }
+
                     let marks = 0;
-                    let maxMarks = 50;
+                    let maxMarks = 0; // 0 means unknown/default
 
-                    // Search all columns for marks pattern "XX / YY" or just numbers
-                    for (let c = 2; c < cols.length; c++) {
+                    // Search all columns for marks pattern "XX / YY"
+                    for (let c = rangeStart; c < cols.length; c++) {
                         const colText = $(cols[c]).text().trim();
 
                         // Parse "40.00 / 50.00" or "40/50" format
                         if (colText.includes('/')) {
-                            const marksParts = colText.split('/').map(s => parseFloat(s.trim().replace(/[^\d.]/g, '')));
-                            if (!isNaN(marksParts[0]) && !isNaN(marksParts[1])) {
-                                marks = marksParts[0];
-                                maxMarks = marksParts[1];
+                            const parts = colText.split('/');
+                            const obtained = parseFloat(parts[0].replace(/[^\d.]/g, ''));
+                            const total = parseFloat(parts[1].replace(/[^\d.]/g, ''));
+
+                            if (!isNaN(obtained) && !isNaN(total)) {
+                                marks = obtained;
+                                maxMarks = total;
+                                break; // Found the total column
+                            }
+                        }
+                    }
+
+                    // If no "/" format found, look for best candidate number
+                    // We assume the highest number in the row (that isn't an ID) might be max marks, 
+                    // or specific column indices if we can guess.
+                    // For now, let's look for the last numeric column as 'total' content if structure fits
+                    if (marks === 0 && maxMarks === 0) {
+                        // Search for a column that looks like a total mark (e.g. near the end)
+                        // This is risky without knowing structure.
+                        // Let's rely on common patterns: Total often at end.
+                        for (let c = cols.length - 1; c >= rangeStart; c--) {
+                            const colText = $(cols[c]).text().trim();
+                            const val = parseFloat(colText);
+                            if (!isNaN(val) && val >= 0 && val <= 100) {
+                                marks = val;
+                                maxMarks = 100; // Assume 100 if we just find a raw number
                                 break;
                             }
                         }
                     }
 
-                    // If no "/" format found, look for standalone numbers that could be marks
-                    if (marks === 0 && cols.length >= 3) {
-                        const colText = $(cols[2]).text().trim();
-                        const parsed = parseFloat(colText);
-                        if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
-                            marks = parsed;
-                        }
-                    }
-
                     // Skip if no valid code or marks found
-                    if (code.length < 3 || (marks === 0 && name.length < 3)) return;
+                    if (subjectCode.length < 3) return;
+
+                    // Determine max marks if still 0
+                    if (maxMarks === 0) maxMarks = 100;
 
                     subjects.push({
-                        subjectCode: code,
-                        subjectName: name || code,
+                        subjectCode: subjectCode,
+                        subjectName: subjectName || subjectCode,
                         totalMarks: marks,
                         maxTotalMarks: maxMarks,
                         components: []
                     });
                 });
 
-                // Stop after finding first valid marks table
+                // Stop after finding first valid marks table that has rows
                 if (subjects.length > 0) {
-                    return false;
+                    return false; // Break cheerio loop
                 }
             }
         });

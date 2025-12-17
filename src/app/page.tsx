@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, ArrowRight, ChevronRight } from 'lucide-react';
+import { Menu, X, ArrowRight, ChevronRight, User, Lock, AlertCircle } from 'lucide-react';
 import { InteractiveGraph } from '@/components/InteractiveGraph';
 import { DecryptText } from '@/components/DecryptText';
 import { MatrixBackground } from '@/components/MatrixBackground';
+import MagneticButton from '@/components/ui/MagneticButton';
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -26,7 +27,7 @@ export default function Home() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
-            <img src="/logo.png" alt="AttendX" className="w-10 h-10 rounded-xl shadow-lg shadow-indigo-500/20" />
+            <img src="/logo.png" alt="AttendX" className="w-10 h-10 rounded-xl shadow-lg shadow-indigo-500/20 rounded-xl" />
             <span className="font-bold text-xl tracking-tight text-white/90">AttendX</span>
           </Link>
 
@@ -118,9 +119,31 @@ export default function Home() {
       <main>
         <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-8 px-4 sm:px-6 overflow-hidden">
 
-          {/* Background Glow Effects */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-glow-gradient opacity-50 pointer-events-none" />
-          <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
+          {/* 
+             FIGMA-STYLE MAGIC LIGHT BEAM - REFINED & MOBILE OPTIMIZED
+             Shoots UPWARDS from the product card. Responsive sizing for mobile.
+          */}
+          <div className="absolute top-[15%] sm:top-[10%] left-1/2 -translate-x-1/2 w-full h-[80vh] sm:h-[1200px] flex justify-center pointer-events-none z-0">
+
+            {/* 1. Base / Splash Glow - Positioned lower (behind product card area) */}
+            <div className="absolute top-[40%] sm:top-[50%] w-[90vw] sm:w-[600px] h-[50vw] sm:h-[400px] bg-primary/30 blur-[60px] sm:blur-[100px] rounded-full mix-blend-screen opacity-50" />
+
+            {/* 2. Outer Beam Haze - Shooting UP */}
+            <div className="absolute top-0 w-[60vw] sm:w-[300px] h-[60%] bg-gradient-to-t from-primary/20 via-primary/5 to-transparent blur-[40px] sm:blur-[60px] mix-blend-screen" />
+
+            {/* 3. Medium Beam - The "Body" */}
+            <div className="absolute top-0 w-[20vw] sm:w-[80px] h-[60%] bg-gradient-to-t from-primary/50 via-indigo-400/30 to-transparent blur-[20px] sm:blur-[30px] mix-blend-screen animate-pulse-slow" />
+
+            {/* 4. Core Beam - The "Hot" Center (Fading as it goes up) */}
+            <div className="absolute top-0 w-[1.5vw] sm:w-[6px] h-[60%] bg-gradient-to-t from-white via-indigo-200 to-transparent blur-[3px] sm:blur-[4px] opacity-70 mix-blend-screen" />
+            <div className="absolute top-0 w-[0.5vw] sm:w-[2px] h-[60%] bg-gradient-to-t from-white via-white/80 to-transparent blur-[1px] opacity-90 mix-blend-screen" />
+
+            {/* 5. Particles - Rising from the source */}
+            <div className="absolute top-[40%] w-1 h-1 bg-white rounded-full blur-[1px] animate-particle-rise opacity-70" style={{ left: 'calc(50% - 40px)', animationDuration: '4s' }} />
+            <div className="absolute top-[50%] w-1.5 h-1.5 bg-indigo-300 rounded-full blur-[1px] animate-particle-rise opacity-50" style={{ left: 'calc(50% + 30px)', animationDuration: '6s', animationDelay: '1s' }} />
+            <div className="absolute top-[45%] w-1 h-1 bg-primary/50 rounded-full blur-[0px] animate-particle-rise opacity-60" style={{ left: 'calc(50% - 15px)', animationDuration: '5s', animationDelay: '2s' }} />
+
+          </div>
 
           {/* Content */}
           <div className="relative z-10 max-w-5xl mx-auto text-center flex flex-col items-center">
@@ -193,43 +216,96 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="py-12 sm:py-16 lg:py-20 border-t border-border/30">
-          {/* Small Matrix Effect Card */}
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 mb-8">
-            <div className="relative h-24 sm:h-32 rounded-xl border border-border/50 overflow-hidden bg-[#0B0C0E]">
-              <MatrixBackground className="opacity-40" />
-              <div className="absolute inset-0 flex items-center justify-center z-10">
-                <div className="flex items-center gap-3 bg-surface/80 backdrop-blur-sm px-4 py-2 rounded-full border border-border">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                  <span className="text-sm font-medium text-textMuted">🔒 Your data stays local • No passwords stored</span>
-                </div>
-              </div>
+        {/* Features Section - Holographic Bento Grid */}
+        <section className="py-20 sm:py-24 relative z-10 px-4 sm:px-6">
+
+          <div className="max-w-6xl mx-auto">
+            {/* Section Header */}
+            <div className="text-center mb-12 sm:mb-16">
+              <h2 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 mb-4">
+                Everything you need.
+              </h2>
+              <p className="text-textMuted max-w-xl mx-auto">
+                No more spreadsheets. No more guessing. AttendX handles the math so you can focus on learning.
+              </p>
             </div>
-          </div>
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 text-center">
-              <div className="p-4 sm:p-6">
-                <div className="w-12 h-12 mx-auto mb-4 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+
+            {/* Bento Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 auto-rows-[minmax(200px,auto)]">
+
+              {/* Card 1: Real-time Tracking (Large - Span 2 cols on Desktop) */}
+              <div className="md:col-span-2 group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl transition-all hover:border-primary/50 hover:shadow-[0_0_30px_rgba(99,102,241,0.15)]">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-6 h-full">
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/5 border border-green-500/20 group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-2">Real-time Analysis</h3>
+                    <p className="text-textMuted leading-relaxed">
+                      Your attendance data is parsed instantly. Visual graphs show you exactly where you stand in every subject with 100% accuracy.
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Real-time Tracking</h3>
-                <p className="text-sm text-textMuted">See your attendance percentage update instantly after each class.</p>
               </div>
-              <div className="p-6">
-                <div className="w-12 h-12 mx-auto mb-4 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+
+              {/* Card 2: Margin Calculator (Tall - Span 1 col, 2 rows) */}
+              <div className="md:row-span-2 group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl transition-all hover:border-blue-500/50 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] flex flex-col justify-between">
+                <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                <div className="relative z-10">
+                  <div className="w-12 h-12 mb-6 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/5 border border-blue-500/20 flex items-center justify-center group-hover:rotate-6 transition-transform duration-300">
+                    <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Bunk Manager</h3>
+                  <p className="text-textMuted text-sm leading-relaxed mb-4">
+                    Know the exact number of classes you can skip while maintaining 75%. We do the math so you don't have to.
+                  </p>
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Margin Calculator</h3>
-                <p className="text-sm text-textMuted">Know exactly how many classes you can miss or need to attend.</p>
-              </div>
-              <div className="p-6">
-                <div className="w-12 h-12 mx-auto mb-4 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+
+                {/* Visual indicator for calculator */}
+                <div className="relative z-10 mt-4 bg-background/50 rounded-lg p-3 border border-white/5">
+                  <div className="flex justify-between text-xs text-textMuted mb-1">
+                    <span>Current</span>
+                    <span className="text-green-400">78%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="w-[78%] h-full bg-green-500 rounded-full" />
+                  </div>
+                  <div className="mt-2 text-[10px] text-right text-textMuted">
+                    Safe to bunk: <span className="text-white">2 classes</span>
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Grade Predictor</h3>
-                <p className="text-sm text-textMuted">Predict your final grades based on current performance.</p>
               </div>
+
+              {/* Card 3: Grade Predictor (Standard) */}
+              <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl transition-all hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.15)]">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10">
+                  <div className="w-12 h-12 mb-4 rounded-2xl bg-gradient-to-br from-purple-500/20 to-fuchsia-500/5 border border-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-1">Grade Predictor</h3>
+                  <p className="text-textMuted text-sm">
+                    Forecast your internal marks based on current attendance trends.
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 4: Privacy (Standard - Span 1 col) */}
+              <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl transition-all hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.15)]">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10">
+                  <div className="w-12 h-12 mb-4 rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/5 border border-orange-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-1">Privacy First</h3>
+                  <p className="text-textMuted text-sm">
+                    Zero data collection. Your credentials never leave your device.
+                  </p>
+                </div>
+              </div>
+
             </div>
           </div>
         </section>
@@ -237,44 +313,101 @@ export default function Home() {
 
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border/30 py-16 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="AttendX" className="w-6 h-6" />
-            <span className="font-semibold text-textMain">AttendX</span>
-            <span className="text-textMuted text-sm ml-2">• Smart attendance tracking</span>
+      {/* 
+        MAGNETIC MEGA FOOTER 
+        Mobile First: Vertical stack with large touch targets.
+        Desktop: Massive typography with magnetic hover effects.
+      */}
+      <footer className="relative border-t border-white/5 pt-20 pb-10 overflow-hidden">
+
+        {/* Ambient Footer Glow */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/10 blur-[120px] rounded-full mix-blend-screen pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-12 mb-20">
+
+            {/* Brand / Main CTA */}
+            <div className="max-w-2xl">
+              <h2 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-6 drop-shadow-lg">
+                READY TO <br />
+                GET SMART?
+              </h2>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <MagneticButton>
+                  <Link
+                    href="/login?dept=FSH"
+                    className="h-14 px-8 bg-white text-black hover:bg-[#EEEEF0] rounded-full font-bold text-lg flex items-center justify-center gap-2"
+                  >
+                    Get Started
+                    <ArrowRight size={20} />
+                  </Link>
+                </MagneticButton>
+
+                <MagneticButton>
+                  <a
+                    href="https://github.com/milind899/srm-attendance-web"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-14 px-8 border border-white/20 hover:border-white text-white rounded-full font-bold text-lg flex items-center justify-center gap-2 hover:bg-white/5"
+                  >
+                    View Source
+                  </a>
+                </MagneticButton>
+              </div>
+            </div>
+
+            {/* Mega Links - Vertical on Mobile, Grid on Desktop */}
+            <div className="flex flex-col sm:flex-row gap-12 sm:gap-24">
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold text-textMuted uppercase tracking-wider">Platform</h3>
+                <ul className="space-y-3">
+                  <li><Link href="/login" className="text-lg text-white hover:text-primary transition-colors block">Login</Link></li>
+                  <li><Link href="/dashboard" className="text-lg text-white hover:text-primary transition-colors block">Dashboard</Link></li>
+                  <li><span className="text-lg text-textMuted cursor-not-allowed">Admin (Soon)</span></li>
+                </ul>
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold text-textMuted uppercase tracking-wider">Connect</h3>
+                <ul className="space-y-3">
+                  <li className="block w-fit">
+                    <MagneticButton>
+                      <a href="https://github.com/milind899" target="_blank" className="text-lg text-white hover:text-primary transition-colors block px-2 py-1">GitHub</a>
+                    </MagneticButton>
+                  </li>
+                  <li className="block w-fit">
+                    <MagneticButton>
+                      <a href="https://linkedin.com/in/milind899" target="_blank" className="text-lg text-white hover:text-primary transition-colors block px-2 py-1">LinkedIn</a>
+                    </MagneticButton>
+                  </li>
+                  <li className="block w-fit">
+                    <MagneticButton>
+                      <a href="mailto:contact@milind.dev" className="text-lg text-white hover:text-primary transition-colors block px-2 py-1">Email</a>
+                    </MagneticButton>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <a
-              href="https://github.com/milind899"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-textMuted hover:text-textMain transition-colors"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" /></svg>
-              GitHub
-            </a>
-            <a
-              href="https://www.linkedin.com/in/milind899/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-textMuted hover:text-textMain transition-colors"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" /></svg>
-              LinkedIn
-            </a>
+          {/* Bottom Bar */}
+          <div className="flex flex-col-reverse md:flex-row justify-between items-center gap-6 pt-8 border-t border-white/5 text-sm text-textMuted">
+            <div className="flex flex-col sm:flex-row items-center gap-2 text-center sm:text-left">
+              <span>© {new Date().getFullYear()} AttendX.</span>
+              <span className="hidden sm:inline">•</span>
+              <span>Crafted by Milind.</span>
+            </div>
+
+            <div className="flex items-center gap-6">
+              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+              <Link href="#" className="hover:text-white transition-colors">Terms</Link>
+              <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-xs font-medium text-white">All Systems Normal</span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="max-w-7xl mx-auto mt-8 pt-8 border-t border-border/30 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-textMuted">
-          <span>🔒 No passwords stored • Data stays in your browser</span>
-          <span className="hidden sm:inline">•</span>
-          <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-          <span className="hidden sm:inline">•</span>
-          <a href="https://milind899.github.io/portfolio/#" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Built by Milind</a>
-          <span className="hidden sm:inline">•</span>
-          <span>© {new Date().getFullYear()}</span>
+
         </div>
       </footer>
     </div>

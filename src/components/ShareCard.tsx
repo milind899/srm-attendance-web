@@ -50,7 +50,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({ data, overallPercentage })
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
-                        <img src="/logo.png" alt="AttendX" className="w-8 h-8" />
+                        <img src="/logo.png" alt="AttendX" className="w-8 h-8 rounded-lg" />
                         <span className="font-bold text-lg text-white">AttendX</span>
                     </div>
                     <span className="text-xs text-textMuted">

@@ -46,3 +46,59 @@ export function calculateClassesToAttend(
     const needed = Math.ceil(numerator / denominator);
     return needed > 0 ? needed : 0;
 }
+
+/**
+ * Calculates the final mark based on internal and external marks.
+ * Assumptions:
+ * - Internal totals 50 Marks
+ * - External totals 100 Marks (scaled down to 50%)
+ * OR
+ * - Internal totals 100 which is scaled to 50
+ */
+export function calculateFinalMark(internal: number, external: number, maxInternal: number = 50): number {
+    // Normalize internal to 50
+    const internalNormalized = (internal / maxInternal) * 50;
+
+    // Normalize external to 50 (assuming exams are out of 100 usually)
+    const externalNormalized = (external / 100) * 50;
+
+    return Math.round(internalNormalized + externalNormalized);
+}
+
+export function calculateGrade(totalMarks: number): string {
+    if (totalMarks >= 91) return 'O';
+    if (totalMarks >= 81) return 'A+';
+    if (totalMarks >= 71) return 'A';
+    if (totalMarks >= 61) return 'B+';
+    if (totalMarks >= 56) return 'B';
+    if (totalMarks >= 50) return 'C';
+    // SRM Pass mark is usually 50% aggregate for some courses, but F is below.
+    // Let's assume standard passing is required.
+    return 'F';
+}
+
+export function getGradePoint(grade: string): number {
+    switch (grade) {
+        case 'O': return 10;
+        case 'A+': return 9;
+        case 'A': return 8;
+        case 'B+': return 7;
+        case 'B': return 6;
+        case 'C': return 5;
+        default: return 0;
+    }
+}
+
+/**
+ * Calculates the external mark (out of 100) required to reach a target total.
+ */
+export function calculateRequiredExternal(internal: number, targetTotal: number, maxInternal: number = 50): number {
+    // Target <= NormalizedInternal + NormalizedExternal
+    // Target <= (Internal/Max * 50) + (External/100 * 50)
+    // Target - (Internal/Max * 50) <= External/2
+    // 2 * (Target - (Internal/Max * 50)) <= External
+
+    const internalNormalized = (internal / maxInternal) * 50;
+    const requiredExternalNormalized = targetTotal - internalNormalized;
+    return Math.ceil(requiredExternalNormalized * 2);
+}

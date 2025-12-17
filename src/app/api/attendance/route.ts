@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     console.error('[API] POST /api/attendance received');
     try {
         const body = await request.json();
-        console.error('[API] Body:', JSON.stringify(body));
+        // console.error('[API] Body:', JSON.stringify(body)); // REMOVED FOR SECURITY
 
         const parseResult = requestSchema.safeParse(body);
 
