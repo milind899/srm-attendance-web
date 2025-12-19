@@ -30,7 +30,7 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
         x: 50,
         y: 300,
         velocity: 0,
-        radius: 20,
+        radius: 15,
         rotation: 0
     });
 
@@ -375,8 +375,8 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
                 {activePowerupDisplay && (
                     <div className="absolute top-16 left-1/2 -translate-x-1/2 flex items-center gap-3 animate-bounce-in">
                         <div className={`p-3 rounded-full shadow-lg shadow-white/10 ${activePowerupDisplay.type === 'GHOST' ? 'bg-blue-500' :
-                                activePowerupDisplay.type === 'SHRINK' ? 'bg-purple-500' :
-                                    'bg-green-500'
+                            activePowerupDisplay.type === 'SHRINK' ? 'bg-purple-500' :
+                                'bg-green-500'
                             }`}>
                             {activePowerupDisplay.type === 'GHOST' && <Shield size={24} className="text-white animate-pulse" />}
                             {activePowerupDisplay.type === 'SHRINK' && <Minimize2 size={24} className="text-white animate-pulse" />}
