@@ -73,12 +73,12 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
         window.addEventListener('resize', resize);
         resize();
 
-        // --- NEW PHYSICS ---
-        const GRAVITY = 0.8;      // Stronger gravity (was 0.5)
-        const JUMP = -11.5;       // Stronger jump (was -8)
-        const PIPE_SPEED = 3.5;   // Faster flow
-        const PIPE_SPAWN_RATE = 100; // Adjusted spawn rate
-        const GAP_SIZE = 230;     // Slightly looser gap
+        // --- SMOOTH PHYSICS ---
+        const GRAVITY = 0.4;      // Floatier (was 0.8)
+        const JUMP = -8;          // Gentle jump (was -11.5)
+        const PIPE_SPEED = 2.5;   // Relaxed (was 3.5)
+        const PIPE_SPAWN_RATE = 140; // Spaced out
+        const GAP_SIZE = 240;     // Generous gap
 
         const loop = () => {
             ctx.fillStyle = '#0B0C0E';
@@ -107,6 +107,10 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
 
             // PLAYING
             stud.velocity += GRAVITY;
+
+            // Cap velocity so you don't fall like a rock
+            if (stud.velocity > 10) stud.velocity = 10;
+
             stud.y += stud.velocity;
             state.frames++;
 
