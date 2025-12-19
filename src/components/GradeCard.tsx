@@ -2,10 +2,6 @@
 import { SubjectMarks } from '@/lib/types';
 import { useState, useEffect } from 'react';
 import { CheckCircle2, Circle } from 'lucide-react';
-
-import { SubjectMarks } from '@/lib/types';
-import { useState, useEffect } from 'react';
-import { CheckCircle2, Circle } from 'lucide-react';
 import { GRADES_ENT, GRADES_FSH } from '@/lib/gradings';
 
 interface GradeCardProps {
