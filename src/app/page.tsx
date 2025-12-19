@@ -131,7 +131,7 @@ export default function Home() {
              FIGMA-STYLE MAGIC LIGHT BEAM - REFINED & MOBILE OPTIMIZED
              Shoots UPWARDS from the product card. Responsive sizing for mobile.
           */}
-          <div className="absolute top-[15%] sm:top-[10%] left-1/2 -translate-x-1/2 w-full h-[140vh] sm:h-[1200px] flex justify-center pointer-events-none z-0">
+          <div className="absolute top-[15%] sm:top-[10%] left-1/2 -translate-x-1/2 w-full h-[95vh] sm:h-[1200px] flex justify-center pointer-events-none z-0">
 
             {/* 1. Base / Splash Glow - Positioned lower (behind product card area) */}
             <div className="absolute top-[40%] sm:top-[50%] w-[90vw] sm:w-[600px] h-[50vw] sm:h-[400px] bg-primary/30 blur-[60px] sm:blur-[100px] rounded-full mix-blend-screen opacity-50" />
