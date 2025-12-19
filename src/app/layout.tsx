@@ -43,8 +43,8 @@ export const metadata: Metadata = {
     title: "AttendX",
   },
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: "/logo.png?v=2",
+    apple: "/logo.png?v=2",
   },
 };
 
