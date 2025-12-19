@@ -81,12 +81,12 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
         window.addEventListener('resize', resize);
         resize();
 
-        // --- BALANCED PHYSICS ---
-        const GRAVITY = 0.5;
-        const JUMP = -8;
-        const BASE_SPEED = 3.5;
-        const SPAWN_RATE = 120;
-        const GAP_SIZE = 220;
+        // --- ULTRA EASY MODE (Moon Gravity) ---
+        const GRAVITY = 0.3;      // Feather-light
+        const JUMP = -7;          // Gentle push
+        const BASE_SPEED = 2;     // Walking pace
+        const SPAWN_RATE = 160;   // Very spaced out
+        const GAP_SIZE = 280;     // Huge gap (can't miss)
 
         const loop = () => {
             ctx.fillStyle = '#0B0C0E';
@@ -109,14 +109,12 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
                     activePowerup.current = null;
                     setActivePowerupDisplay(null);
                 } else {
-                    // Sync display every 60 frames (1s) to avoid excessive re-renders
                     if (powerup.timeLeft % 60 === 0) {
                         setActivePowerupDisplay({ type: powerup.type, timeLeft: Math.ceil(powerup.timeLeft / 60) });
                     }
-
-                    if (powerup.type === 'SHRINK') currentRecall = 12; // Tiny!
-                    if (powerup.type === 'SLOW') currentSpeed = 2;     // Matrix mode
-                    if (powerup.type === 'GHOST') isGhost = true;      // Imposter
+                    if (powerup.type === 'SHRINK') currentRecall = 12;
+                    if (powerup.type === 'SLOW') currentSpeed = 1.5;   // Super slow
+                    if (powerup.type === 'GHOST') isGhost = true;
                 }
             }
 
@@ -137,9 +135,10 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
 
             // --- PLAYING ---
 
-            // Physics
+            // Physics (Caps fall speed to prevent plummeting)
             stud.velocity += GRAVITY;
-            if (stud.velocity > 10) stud.velocity = 10;
+            if (stud.velocity > 6) stud.velocity = 6;
+
             stud.y += stud.velocity;
 
             // Rotation
@@ -168,12 +167,12 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
             state.frames++;
 
             // Spawn Pipes
-            // Adjust spawn rate based on speed so gaps are consistent
-            const effectiveSpawnRate = powerup?.type === 'SLOW' ? 180 : SPAWN_RATE;
+            const effectiveSpawnRate = powerup?.type === 'SLOW' ? Math.floor(SPAWN_RATE * 1.5) : SPAWN_RATE;
 
             if (state.frames > 100 && state.frames % effectiveSpawnRate === 0) {
-                const minHeight = 100;
-                const maxHeight = canvas.height - GAP_SIZE - minHeight;
+                const minHeight = 100; // Keep min height reasonable
+                // Ensure there's actually space
+                const maxHeight = Math.max(minHeight + 50, canvas.height - GAP_SIZE - minHeight);
                 const height = Math.floor(Math.random() * (maxHeight - minHeight + 1) + minHeight);
                 pipeList.push({ x: canvas.width, topHeight: height, passed: false });
             }
