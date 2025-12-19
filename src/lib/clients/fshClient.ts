@@ -267,7 +267,7 @@ export class FshClient {
             }
 
             // Check if student has no attendance records yet
-            if (html.toLowerCase().includes('no records') || html.toLowerCase().includes('no attendance')) {
+            if (html.toLowerCase().includes('no records') || html.toLowerCase().includes('no attendance') || html.toLowerCase().includes('no record found')) {
                 return {
                     success: true,
                     data: {
@@ -275,7 +275,7 @@ export class FshClient {
                         registrationNumber: username,
                         records: []
                     },
-                    error: 'No attendance records found. Your academic data may not be available yet.'
+                    // No error message so UI shows empty state cleanly
                 };
             }
 
@@ -400,6 +400,18 @@ export class FshClient {
         });
 
         if (subjects.length === 0) {
+            // Check for empty state "No Record found"
+            if (html.toLowerCase().includes('no record found') || html.toLowerCase().includes('no internal mark')) {
+                return {
+                    success: true,
+                    data: {
+                        studentName: username,
+                        registrationNumber: username,
+                        subjects: []
+                    }
+                };
+            }
+
             return { success: false, error: 'Internal marks table not found' };
         }
 
