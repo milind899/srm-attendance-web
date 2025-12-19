@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Loader2, ArrowRight, RotateCcw, ShieldCheck, Github, Globe } from 'lucide-react';
 import LoginLoader from '@/components/LoginLoader';
-import Footer from '@/components/Footer';
+
 
 function LoginForm() {
     const searchParams = useSearchParams();
@@ -297,9 +297,7 @@ function LoginForm() {
                 </div>
 
                 {/* Footer */}
-                <div className="relative z-10 mt-8 w-full">
-                    <Footer />
-                </div>
+
             </div>
         </div>
     );

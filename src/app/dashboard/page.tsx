@@ -8,17 +8,32 @@ import { AttendanceData, AttendanceRecord, InternalMarksData, SubjectMarks } fro
 import { DecryptText } from '@/components/DecryptText';
 import { Loader2, Share2, BarChart3, Award, FileText, RefreshCw, User, CalendarCheck, ClipboardList, GraduationCap } from 'lucide-react';
 import AttendanceCard from '@/components/AttendanceCard';
+import { SubjectTile } from '@/components/SubjectTile';
+import { SubjectDetailModal } from '@/components/SubjectDetailModal';
+import { GradeCard } from '@/components/GradeCard';
 
 type Tab = 'attendance' | 'marks' | 'grades';
 
 // Grade thresholds for 100-based total
-const GRADES = [
+// ENT Grading
+const GRADES_ENT = [
     { grade: 'O', min: 91, gp: 10, color: 'text-emerald-400', bg: 'bg-emerald-500' },
     { grade: 'A+', min: 81, gp: 9, color: 'text-green-400', bg: 'bg-green-500' },
     { grade: 'A', min: 71, gp: 8, color: 'text-lime-400', bg: 'bg-lime-500' },
     { grade: 'B+', min: 61, gp: 7, color: 'text-yellow-400', bg: 'bg-yellow-500' },
     { grade: 'B', min: 51, gp: 6, color: 'text-orange-400', bg: 'bg-orange-500' },
-    { grade: 'C', min: 40, gp: 5, color: 'text-red-400', bg: 'bg-red-500' },
+    { grade: 'C', min: 45, gp: 5, color: 'text-red-400', bg: 'bg-red-500' },
+    { grade: 'F', min: 0, gp: 0, color: 'text-red-600', bg: 'bg-red-600' },
+];
+
+// FSH Grading
+const GRADES_FSH = [
+    { grade: 'O', min: 91, gp: 10, color: 'text-emerald-400', bg: 'bg-emerald-500' },
+    { grade: 'A+', min: 81, gp: 9, color: 'text-green-400', bg: 'bg-green-500' },
+    { grade: 'A', min: 71, gp: 8, color: 'text-lime-400', bg: 'bg-lime-500' },
+    { grade: 'B+', min: 61, gp: 7, color: 'text-yellow-400', bg: 'bg-yellow-500' },
+    { grade: 'B', min: 56, gp: 6, color: 'text-orange-400', bg: 'bg-orange-500' },
+    { grade: 'C', min: 50, gp: 5, color: 'text-red-400', bg: 'bg-red-500' },
     { grade: 'F', min: 0, gp: 0, color: 'text-red-600', bg: 'bg-red-600' },
 ];
 
@@ -29,13 +44,43 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<Tab>('attendance');
 
+    // Selected Subject for Modal
+    const [selectedSubject, setSelectedSubject] = useState<AttendanceRecord | null>(null);
+
     // Internal Marks State
     const [internalMarks, setInternalMarks] = useState<InternalMarksData | null>(null);
     const [marksLoading, setMarksLoading] = useState(false);
     const [marksError, setMarksError] = useState<string | null>(null);
 
     // Grade goal state - target grade for each subject
-    const [targetGrades, setTargetGrades] = useState<{ [key: string]: string }>({});
+    // We now store more detailed projection info
+    interface Projection {
+        credits: number;
+        point: number;
+    }
+    const [projections, setProjections] = useState<Record<string, Projection>>({});
+
+    const handleGradeUpdate = (data: { subjectCode: string; credits: number; targetGrade: string; predictedPoint: number }) => {
+        setProjections(prev => ({
+            ...prev,
+            [data.subjectCode]: {
+                credits: data.credits,
+                point: data.predictedPoint
+            }
+        }));
+    };
+
+    const overallSGPA = () => {
+        let totalPoints = 0;
+        let totalCredits = 0;
+
+        Object.values(projections).forEach(p => {
+            totalPoints += p.point * p.credits;
+            totalCredits += p.credits;
+        });
+
+        return totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : '0.00';
+    };
 
     // Share card state
     const [showShareCard, setShowShareCard] = useState(false);
@@ -92,13 +137,6 @@ export default function Dashboard() {
         try {
             const parsedData: AttendanceData = JSON.parse(stored);
             setData(parsedData);
-
-            // Initialize target grades to 'A' for all subjects
-            const initialTargets: { [key: string]: string } = {};
-            parsedData.records.forEach(r => {
-                initialTargets[r.subjectCode] = 'A';
-            });
-            setTargetGrades(initialTargets);
 
             // Fetch internal marks for FSH department only if not already present
             if (dept === 'FSH' && (!cachedMarks || cachedMarksDept !== dept)) {
@@ -251,57 +289,14 @@ export default function Dashboard() {
     };
 
     const calculateGrade = (total: number) => {
+        const GRADES = department === 'FSH' ? GRADES_FSH : GRADES_ENT;
         for (const g of GRADES) {
             if (total >= g.min) return g;
         }
         return GRADES[GRADES.length - 1];
     };
 
-    // Calculate required end sem marks to achieve target grade - NO CAP
-    const calculateRequiredEndSem = (internalMark: number, targetGrade: string): number => {
-        const gradeInfo = GRADES.find(g => g.grade === targetGrade);
-        if (!gradeInfo) return 0;
 
-        const endSemConverted = gradeInfo.min - internalMark;
-
-        // Logic for ENT: End sem out of 75, converted to 40
-        // endSemConverted = (endSemActual / 75) * 40
-        // endSemActual = (endSemConverted * 75) / 40
-
-        // Logic for others (FSH): End sem out of 100, converted to 50
-        // endSemConverted = (endSemActual / 100) * 50 = endSemActual / 2
-        // endSemActual = endSemConverted * 2
-
-        if (department === 'ENT') {
-            return Math.max(0, (endSemConverted * 75) / 40);
-        }
-
-        return Math.max(0, endSemConverted * 2);
-    };
-
-    // Calculate predicted GPA based on current marks and target grades
-    const calculatePredictedGPA = () => {
-        if (!internalMarks?.subjects || internalMarks.subjects.length === 0) return { gpa: 0, totalCredits: 0 };
-
-        let totalPoints = 0;
-        let totalCredits = 0;
-
-        internalMarks.subjects.forEach(subject => {
-            const targetGrade = targetGrades[subject.subjectCode] || 'A';
-            const gradeInfo = GRADES.find(g => g.grade === targetGrade);
-            const credit = 4; // Default credit
-
-            if (gradeInfo) {
-                totalPoints += gradeInfo.gp * credit;
-                totalCredits += credit;
-            }
-        });
-
-        return {
-            gpa: totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : '0.00',
-            totalCredits
-        };
-    };
 
     if (loading || !data) {
         return (
@@ -406,80 +401,91 @@ export default function Dashboard() {
                 {/* Attendance Tab */}
                 {activeTab === 'attendance' && (
                     <div className="max-w-6xl mx-auto px-4">
-                        {/* Overall Attendance - Premium Design */}
-                        <div className="mb-10 opacity-0 animate-blur-in">
-                            <div className={`relative overflow-hidden rounded-3xl p-8 sm:p-12 border-4 shadow-2xl ${overallPercentage >= 75
-                                ? 'bg-gradient-to-br from-green-600/25 via-green-500/15 to-transparent border-green-400/50'
-                                : 'bg-gradient-to-br from-red-600/25 via-red-500/15 to-transparent border-red-400/50'
+                        {/* Overall Attendance - Bento Style */}
+                        <div className="mb-6 opacity-0 animate-blur-in">
+                            <div className={`relative overflow-hidden rounded-3xl p-6 sm:p-8 border shadow-xl ${overallPercentage >= 75
+                                ? 'bg-emerald-500/5 border-emerald-500/20'
+                                : 'bg-red-500/5 border-red-500/20'
                                 }`}>
-                                {/* Background Decoration */}
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-radial from-white/5 to-transparent blur-3xl pointer-events-none"></div>
 
-                                <div className="relative flex flex-col sm:flex-row items-center justify-between gap-8">
+                                <div className="relative flex flex-col sm:flex-row items-center justify-between gap-6">
                                     {/* Left: Giant Stats */}
                                     <div className="flex flex-col sm:flex-row items-center gap-6">
-                                        {/* Massive Percentage with Glow */}
-                                        <div className="relative">
-                                            <div className={`text-7xl sm:text-8xl font-black leading-none drop-shadow-2xl ${overallPercentage >= 75 ? 'text-green-300' : 'text-red-300'
+                                        <div className="relative text-center sm:text-left">
+                                            <div className="text-sm font-medium text-white/50 uppercase tracking-widest mb-1">Overall Attendance</div>
+                                            <div className={`text-6xl sm:text-7xl font-black leading-none tracking-tight ${overallPercentage >= 75 ? 'text-emerald-400' : 'text-red-400'
                                                 }`}>
-                                                <span className={overallPercentage >= 75 ? 'text-green-300' : 'text-red-300'}>
-                                                    <DecryptText text={String(overallPercentage)} speed={100} delay={500} />
-                                                </span>
-                                                <span className="text-4xl sm:text-5xl">%</span>
+                                                <DecryptText text={String(overallPercentage)} speed={100} delay={500} />
+                                                <span className="text-3xl sm:text-4xl text-white/30">%</span>
                                             </div>
-                                            <div className={`absolute inset-0 blur-3xl opacity-40 ${overallPercentage >= 75 ? 'bg-green-400' : 'bg-red-400'
-                                                }`}></div>
                                         </div>
 
-                                        {/* Thick Divider */}
-                                        <div className={`hidden sm:block w-1 h-24 rounded-full shadow-lg ${overallPercentage >= 75 ? 'bg-green-400/40' : 'bg-red-400/40'
-                                            }`}></div>
+                                        {/* Divider */}
+                                        <div className="hidden sm:block w-px h-16 bg-white/10"></div>
 
-                                        {/* Details */}
-                                        <div className="flex flex-col gap-2 text-center sm:text-left">
-                                            <div className="text-xl sm:text-2xl font-bold text-white/95">
-                                                Overall Attendance
+                                        {/* Hours Pill */}
+                                        <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/5">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs text-white/40 font-medium uppercase">Attended</span>
+                                                <span className="text-lg font-bold text-white">{attendedHours}h</span>
                                             </div>
-                                            <div className="text-base sm:text-lg text-white/60">
-                                                {attendedHours} / {totalHours} hours
+                                            <div className="w-px h-6 bg-white/10"></div>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs text-white/40 font-medium uppercase">Total</span>
+                                                <span className="text-lg font-bold text-white/70">{totalHours}h</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Premium Status Badge */}
-                                    <div className={`flex items-center gap-3 px-6 sm:px-8 py-4 rounded-2xl border-3 backdrop-blur-md shadow-xl ${overallPercentage >= 75
-                                        ? 'bg-green-500/25 border-green-300/50 text-green-100'
-                                        : 'bg-red-500/25 border-red-300/50 text-red-100'
+                                    {/* Status Badge */}
+                                    <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl border backdrop-blur-md ${overallPercentage >= 75
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                        : 'bg-red-500/10 border-red-500/20 text-red-400'
                                         }`}>
-                                        <span className="text-2xl sm:text-3xl font-bold">
+                                        <span className="text-xl font-bold">
                                             {overallPercentage >= 75 ? '✓' : '⚠'}
                                         </span>
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-base sm:text-lg font-bold whitespace-nowrap">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold whitespace-nowrap">
                                                 {overallPercentage >= 75
-                                                    ? `Safe ${department === 'FSH' ? Math.max(0, overallCanMiss) : ''}`
-                                                    : `Need ${department === 'FSH' ? Math.max(0, overallNeedToAttend) : '0'} more`
+                                                    ? `Safe Margin: ${department === 'FSH' ? Math.max(0, overallCanMiss) : ''}`
+                                                    : `Attendance Lag: ${department === 'FSH' ? Math.max(0, overallNeedToAttend) : '0'}`
                                                 }
                                             </span>
-                                            {overallPercentage >= 75 && department === 'FSH' && (
-                                                <span className="text-sm text-green-100/80">
-                                                    Can miss {Math.max(0, overallCanMiss)} {Math.max(0, overallCanMiss) === 1 ? 'class' : 'classes'}
-                                                </span>
-                                            )}
+                                            <span className="text-xs opacity-70">
+                                                {overallPercentage >= 75 ? 'Classes you can miss' : 'Classes to attend'}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Subject Cards - Vertical Stack on Mobile */}
-                        <div className="opacity-0 animate-blur-in delay-200">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                        {/* Bento Grid - Subjects */}
+                        <div className="opacity-0 animate-blur-in delay-200 mb-24">
+                            <h3 className="text-sm font-medium text-white/50 mb-4 px-1 uppercase tracking-widest">
+                                Your Subjects
+                            </h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                                 {data.records.map((record, i) => (
-                                    <SubjectCard key={`${record.subjectCode}-${i}`} record={record} department={department} />
+                                    <SubjectTile
+                                        key={`${record.subjectCode}-${i}`}
+                                        record={record}
+                                        department={department}
+                                        onClick={() => setSelectedSubject(record)}
+                                    />
                                 ))}
                             </div>
                         </div>
+
+                        {/* Subject Detail Modal */}
+                        {selectedSubject && (
+                            <SubjectDetailModal
+                                record={selectedSubject}
+                                department={department}
+                                onClose={() => setSelectedSubject(null)}
+                            />
+                        )}
                     </div>
                 )}
 
@@ -551,140 +557,51 @@ export default function Dashboard() {
 
                 {/* Grades Tab */}
                 {activeTab === 'grades' && (
-                    <div className="max-w-6xl mx-auto px-4">
-                        {/* Hero Section - Mobile Optimized */}
-                        <div className="text-center mb-6 opacity-0 animate-blur-in">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/50 px-3 py-1.5 text-xs text-textMuted mb-4 backdrop-blur-sm">
-                                <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
-                                <DecryptText text="Grade Predictor" speed={30} delay={200} />
+                    <div className="max-w-6xl mx-auto px-4 pb-20">
+                        {/* Projected SGPA Card - From Image */}
+                        {/* Grade Predictor Hero - Centered per new design */}
+                        <div className="flex flex-col items-center justify-center py-10 opacity-0 animate-blur-in text-center">
+                            {/* Pill */}
+                            <div className="inline-flex items-center gap-2 rounded-full bg-[#1A1825] border border-[#2D2B3D] px-4 py-1.5 mb-6">
+                                <div className="w-2 h-2 rounded-full bg-[#8B5CF6]"></div>
+                                <span className="text-sm font-medium text-[#8B8D98]">Grade Predictor</span>
                             </div>
 
-                            {subjectsWithMarks.length > 0 ? (
-                                <>
-                                    <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-accent-yellow via-accent-yellow to-accent-yellow/60 mb-2">
-                                        <DecryptText text={String(calculatePredictedGPA().gpa)} speed={40} delay={300} />
-                                    </h1>
-                                    <p className="text-base sm:text-lg text-textMuted mb-1">Predicted GPA</p>
-                                    <p className="text-xs sm:text-sm text-textMuted/70">Based on target grades below</p>
-                                </>
-                            ) : (
-                                <>
-                                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-[#EEEEF0] via-[#EEEEF0] to-[#EEEEF0]/60 mb-4">
-                                        Grade Predictor
-                                    </h1>
-                                    <p className="text-lg text-textMuted">Calculate your target grades</p>
-                                </>
-                            )}
+                            {/* Huge Grade */}
+                            <h1 className="text-7xl sm:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-[#FDE047] to-[#EAB308] mb-2 tracking-tight">
+                                <DecryptText text={overallSGPA()} speed={50} delay={200} />
+                            </h1>
+
+                            {/* Subtext */}
+                            <h2 className="text-xl text-[#8B8D98] font-medium mb-1">Predicted GPA</h2>
+                            <p className="text-sm text-[#52525B]">Based on target grades below</p>
                         </div>
 
-                        {/* Grades Cards Grid - Mobile Optimized */}
+                        {/* Grades Cards Grid - New Components */}
                         {subjectsWithMarks.length > 0 ? (
                             <div className="opacity-0 animate-blur-in delay-200">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                                    {subjectsWithMarks.map((subject, i) => {
-                                        const targetGrade = targetGrades[subject.subjectCode] || 'A';
-                                        const requiredEndSem = calculateRequiredEndSem(subject.totalMarks, targetGrade);
-                                        const maxEndSem = department === 'ENT' ? 75 : 100;
-                                        const isPossible = requiredEndSem <= maxEndSem;
-                                        const gradeInfo = GRADES.find(g => g.grade === targetGrade) || GRADES[2];
-                                        const percentage = subject.maxTotalMarks > 0 ? (subject.totalMarks / subject.maxTotalMarks) * 100 : 0;
-
-                                        // Color coding
-                                        const borderColor = percentage >= 80 ? 'border-emerald-500/30' : percentage >= 60 ? 'border-yellow-500/30' : 'border-red-500/30';
-                                        const bgColor = percentage >= 80 ? 'bg-emerald-950/40' : percentage >= 60 ? 'bg-yellow-950/40' : 'bg-red-950/40';
-
-                                        return (
-                                            <div
-                                                key={`grade-${subject.subjectCode}-${i}`}
-                                                className={`relative p-5 rounded-2xl border-2 ${borderColor} ${bgColor} transition-all duration-300`}
-                                            >
-                                                {/* Header: Subject + Current Marks */}
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="flex-1 min-w-0 mr-3">
-                                                        <h3 className="text-lg font-bold text-white leading-tight mb-1.5">
-                                                            {subject.subjectName}
-                                                        </h3>
-                                                        <div className="px-2 py-1 rounded-md bg-black/30 text-[11px] text-white/60 font-medium inline-block">
-                                                            {subject.subjectCode}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Internal Marks - Large */}
-                                                    <div className="text-right">
-                                                        <div className="text-3xl font-black text-white leading-none">
-                                                            {subject.totalMarks.toFixed(0)}
-                                                            <span className="text-xl text-white/40">/{subject.maxTotalMarks}</span>
-                                                        </div>
-                                                        <div className="text-xs text-white/40 mt-1">Internal</div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Target Grade Selector - BIG TOUCH TARGETS */}
-                                                <div className="mb-5">
-                                                    <div className="text-white/50 text-xs font-medium mb-3">Target Grade</div>
-
-                                                    {/* Grade Pills - Mobile Friendly */}
-                                                    <div className="grid grid-cols-6 gap-2 mb-3">
-                                                        {['C', 'B', 'B+', 'A', 'A+', 'O'].map((g) => (
-                                                            <button
-                                                                key={g}
-                                                                onClick={() => setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: g }))}
-                                                                className={`py-2 rounded-lg font-bold text-sm transition-all ${targetGrade === g
-                                                                    ? `${gradeInfo.bg} text-white scale-110 shadow-lg`
-                                                                    : 'bg-white/5 text-white/40 hover:bg-white/10'
-                                                                    }`}
-                                                            >
-                                                                {g}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-
-                                                    {/* BIG Slider for Mobile */}
-                                                    <input
-                                                        type="range"
-                                                        min="0"
-                                                        max="5"
-                                                        value={['C', 'B', 'B+', 'A', 'A+', 'O'].indexOf(targetGrade)}
-                                                        onChange={(e) => {
-                                                            const grades = ['C', 'B', 'B+', 'A', 'A+', 'O'];
-                                                            setTargetGrades(prev => ({ ...prev, [subject.subjectCode]: grades[parseInt(e.target.value)] }));
-                                                        }}
-                                                        className="w-full h-3 bg-white/10 rounded-full appearance-none cursor-pointer"
-                                                    />
-                                                </div>
-
-                                                {/* Required End Sem Score - Prominent */}
-                                                <div className={`p-4 rounded-xl border-2 ${isPossible ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/15 border-red-500/30'
-                                                    }`}>
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <div className="text-white/50 text-xs font-medium mb-1">End Sem Needed</div>
-                                                            <div className={`text-2xl font-black ${isPossible ? 'text-emerald-300' : 'text-red-300'}`}>
-                                                                {requiredEndSem.toFixed(0)}
-                                                                <span className="text-sm text-white/40 font-normal"> / {maxEndSem}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className={`px-3 py-2 rounded-lg ${gradeInfo.bg} text-white font-black text-lg`}>
-                                                            {isPossible ? targetGrade : '!'}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {subjectsWithMarks.map((subject, i) => (
+                                        <GradeCard
+                                            key={`${subject.subjectCode}-${i}`}
+                                            subject={subject}
+                                            startCredits={subjectsWithMarks.length === 5 ? 4 : 3} // Heuristic default
+                                            department={department}
+                                            onUpdate={handleGradeUpdate}
+                                        />
+                                    ))}
                                 </div>
                             </div>
                         ) : (
                             <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
-                                <p className="text-textMuted mb-6">No marks data. Fetch marks first to use Grade Predictor.</p>
+                                <p className="text-textMuted mb-6">No marks data available to predict grades.</p>
                                 <button onClick={() => setActiveTab('marks')} className="bg-[#EEEEF0] text-black px-6 py-3 rounded-full font-medium hover:bg-white transition-colors">
                                     Go to Marks →
                                 </button>
                             </div>
                         )}
                     </div>
-                )
-                }
+                )}
 
                 {/* Footer / Disclaimer */}
                 <footer className="py-8 text-center opacity-60 hover:opacity-100 transition-opacity">
@@ -761,95 +678,7 @@ export default function Dashboard() {
     );
 }
 
-// Subject Card for Attendance - Mobile-First with Consumer Psychology
-function SubjectCard({ record }: { record: AttendanceRecord; department: string }) {
-    const percentage = record.percentage || 0;
-    const isSafe = percentage >= 75;
-    const isExcellent = percentage >= 85;
 
-    const calculateCanMiss = () => {
-        const { attendedHours, totalHours } = record;
-        if (!totalHours || !attendedHours) return 0;
-        return Math.max(0, Math.floor((attendedHours - 0.75 * totalHours) / 0.75));
-    };
-
-    const calculateNeedToAttend = () => {
-        const { attendedHours, totalHours } = record;
-        if (!totalHours || !attendedHours) return 0;
-        return Math.max(0, Math.ceil((0.75 * totalHours - attendedHours) / 0.25));
-    };
-
-    const canMiss = calculateCanMiss();
-    const needToAttend = calculateNeedToAttend();
-
-    // Color psychology - SOLID backgrounds, no glass
-    const bgColor = isExcellent ? 'bg-emerald-950/40' : isSafe ? 'bg-green-950/40' : 'bg-red-950/40';
-    const borderColor = isExcellent ? 'border-emerald-500/30' : isSafe ? 'border-green-500/30' : 'border-red-500/30';
-    const textColor = isExcellent ? 'text-emerald-400' : isSafe ? 'text-green-400' : 'text-red-400';
-    const barColor = isExcellent ? 'bg-emerald-500' : isSafe ? 'bg-green-500' : 'bg-red-500';
-
-    return (
-        <div className={`relative p-5 rounded-2xl border-2 ${borderColor} ${bgColor} transition-all duration-300 active:scale-[0.98]`}>
-            {/* Top Row: Subject Name + Huge Percentage */}
-            <div className="flex items-start justify-between mb-4">
-                <div className="flex-1 min-w-0 mr-3">
-                    <h3 className="text-lg font-bold text-white leading-tight mb-1.5">
-                        {record.subjectName}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 rounded-md bg-black/30 text-[11px] text-white/60 font-medium">
-                            {record.subjectCode}
-                        </span>
-                        {record.category && (
-                            <span className="text-[11px] text-white/40">
-                                {record.category}
-                            </span>
-                        )}
-                    </div>
-                </div>
-
-                {/* HUGE Percentage - Psychology: Largest element = most important */}
-                <div className={`text-5xl font-black ${textColor} leading-none`}>
-                    {percentage.toFixed(0)}
-                    <span className="text-2xl">%</span>
-                </div>
-            </div>
-
-            {/* Progress Bar - Thick & Clear */}
-            <div className="relative w-full h-3 bg-white/5 rounded-full overflow-hidden mb-4">
-                <div
-                    className={`absolute inset-y-0 left-0 rounded-full ${barColor} transition-all duration-700 ease-out`}
-                    style={{ width: `${Math.min(100, percentage)}%` }}
-                />
-                {/* 75% Threshold Marker */}
-                <div className="absolute top-0 bottom-0 w-1 bg-white/30" style={{ left: '75%' }} />
-            </div>
-
-            {/* Bottom Row: Hours + Action (Psychology: Clear CTA) */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <div className="text-white/40 text-xs font-medium mb-0.5">Attended</div>
-                    <div className="text-white text-base font-bold">
-                        {record.attendedHours}
-                        <span className="text-white/30 font-normal"> / {record.totalHours}</span>
-                    </div>
-                </div>
-
-
-                {/* Psychology: Action-oriented text in colored pill */}
-                <div className={`px-4 py-2.5 rounded-xl ${isSafe ? 'bg-emerald-500/15' : 'bg-red-500/15'} border-2 ${isSafe ? 'border-emerald-500/30' : 'border-red-500/30'}`}>
-                    <div className={`text-sm font-black ${isSafe ? 'text-emerald-300' : 'text-red-300'} whitespace-nowrap`}>
-                        {isSafe ? (
-                            <>✓ Safe to miss {canMiss}</>
-                        ) : (
-                            <>! Need {needToAttend} more</>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
 
 // Marks Card - Mobile First
 function MarksCard({ subject }: { subject: SubjectMarks }) {
