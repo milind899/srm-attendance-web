@@ -132,11 +132,11 @@ export default function Home() {
             <div className="absolute top-0 w-[60vw] sm:w-[300px] h-[60%] bg-gradient-to-t from-primary/20 via-primary/5 to-transparent blur-[40px] sm:blur-[60px] mix-blend-screen" />
 
             {/* 3. Medium Beam - The "Body" */}
-            <div className="absolute top-0 w-[20vw] sm:w-[80px] h-[60%] bg-gradient-to-t from-primary/50 via-indigo-400/30 to-transparent blur-[20px] sm:blur-[30px] mix-blend-screen animate-pulse-slow" />
+            <div className="hidden sm:block absolute top-0 w-[20vw] sm:w-[80px] h-[60%] bg-gradient-to-t from-primary/50 via-indigo-400/30 to-transparent blur-[20px] sm:blur-[30px] mix-blend-screen animate-pulse-slow" />
 
             {/* 4. Core Beam - The "Hot" Center (Fading as it goes up) */}
-            <div className="absolute top-0 w-[1.5vw] sm:w-[6px] h-[60%] bg-gradient-to-t from-white via-indigo-200 to-transparent blur-[3px] sm:blur-[4px] opacity-70 mix-blend-screen" />
-            <div className="absolute top-0 w-[0.5vw] sm:w-[2px] h-[60%] bg-gradient-to-t from-white via-white/80 to-transparent blur-[1px] opacity-90 mix-blend-screen" />
+            <div className="hidden sm:block absolute top-0 w-[1.5vw] sm:w-[6px] h-[60%] bg-gradient-to-t from-white via-indigo-200 to-transparent blur-[3px] sm:blur-[4px] opacity-70 mix-blend-screen" />
+            <div className="hidden sm:block absolute top-0 w-[0.5vw] sm:w-[2px] h-[60%] bg-gradient-to-t from-white via-white/80 to-transparent blur-[1px] opacity-90 mix-blend-screen" />
 
             {/* 5. Particles - Rising from the source */}
             <div className="absolute top-[40%] w-1 h-1 bg-white rounded-full blur-[1px] animate-particle-rise opacity-70" style={{ left: 'calc(50% - 40px)', animationDuration: '4s' }} />
