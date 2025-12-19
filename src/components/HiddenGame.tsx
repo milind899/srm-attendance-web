@@ -263,6 +263,7 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
             window.removeEventListener('touchstart', onTouch);
             window.removeEventListener('mousedown', onClick);
             cancelAnimationFrame(animationFrameId);
+            clearTimeout(unlockTimer);
         };
     }, []); // Run once on mount
 
