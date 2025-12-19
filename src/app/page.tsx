@@ -132,11 +132,11 @@ export default function Home() {
             <div className="absolute top-0 w-[60vw] sm:w-[300px] h-[60%] bg-gradient-to-t from-primary/20 via-primary/5 to-transparent blur-[40px] sm:blur-[60px] mix-blend-screen" />
 
             {/* 3. Medium Beam - The "Body" */}
-            <div className="absolute top-0 w-[20vw] sm:w-[80px] h-[60%] bg-gradient-to-t from-primary/50 via-indigo-400/30 to-transparent blur-[20px] sm:blur-[30px] mix-blend-screen animate-pulse-slow opacity-30 sm:opacity-100" />
+            <div className="absolute top-0 w-[20vw] sm:w-[80px] h-[60%] bg-gradient-to-t from-primary/50 via-indigo-400/30 to-transparent blur-[20px] sm:blur-[30px] mix-blend-screen animate-pulse-slow opacity-20 sm:opacity-50" />
 
             {/* 4. Core Beam - The "Hot" Center (Fading as it goes up) */}
-            <div className="absolute top-0 w-[1.5vw] sm:w-[6px] h-[60%] bg-gradient-to-t from-white via-indigo-200 to-transparent blur-[3px] sm:blur-[4px] mix-blend-screen opacity-20 sm:opacity-70" />
-            <div className="absolute top-0 w-[0.5vw] sm:w-[2px] h-[60%] bg-gradient-to-t from-white via-white/80 to-transparent blur-[1px] mix-blend-screen opacity-30 sm:opacity-90" />
+            <div className="absolute top-0 w-[1.5vw] sm:w-[6px] h-[60%] bg-gradient-to-t from-white via-indigo-200 to-transparent blur-[3px] sm:blur-[4px] mix-blend-screen opacity-10 sm:opacity-40" />
+            <div className="absolute top-0 w-[0.5vw] sm:w-[2px] h-[60%] bg-gradient-to-t from-white via-white/80 to-transparent blur-[1px] mix-blend-screen opacity-20 sm:opacity-50" />
 
             {/* 5. Particles - Rising from the source */}
             <div className="absolute top-[40%] w-1 h-1 bg-white rounded-full blur-[1px] animate-particle-rise opacity-70" style={{ left: 'calc(50% - 40px)', animationDuration: '4s' }} />
@@ -173,17 +173,17 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <div className="opacity-0 animate-blur-in delay-300 flex flex-col items-center gap-4 w-full sm:w-auto">
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
                 <Link
                   href={isLoggedIn ? '/dashboard' : '/login?dept=FSH'}
-                  className="whitespace-nowrap w-full sm:w-auto h-14 px-8 text-base bg-[#EEEEF0] text-black hover:bg-white border border-transparent shadow-[0_0_20px_rgba(255,255,255,0.1)] inline-flex items-center justify-center rounded-full font-semibold transition-all"
+                  className="whitespace-nowrap w-full h-14 px-8 text-base bg-[#EEEEF0] text-black hover:bg-white border border-transparent shadow-[0_0_20px_rgba(255,255,255,0.1)] inline-flex items-center justify-center rounded-full font-semibold transition-all justify-self-end"
                 >
                   FSH Portal
                   <ArrowRight size={18} className="ml-2" />
                 </Link>
                 <Link
                   href={isLoggedIn ? '/dashboard' : '/login?dept=ENT'}
-                  className="whitespace-nowrap relative w-full sm:w-auto h-14 px-6 sm:px-8 text-base bg-transparent text-textMain border border-border hover:bg-surfaceHighlight hover:border-[#4B4E56] inline-flex items-center justify-center rounded-full font-semibold transition-all"
+                  className="whitespace-nowrap relative w-full h-14 px-6 sm:px-8 text-base bg-transparent text-textMain border border-border hover:bg-surfaceHighlight hover:border-[#4B4E56] inline-flex items-center justify-center rounded-full font-semibold transition-all justify-self-start"
                 >
                   ENT Portal
                   <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-yellow-500/20 text-yellow-400 rounded-full border border-yellow-500/30">
@@ -364,7 +364,7 @@ export default function Home() {
                 <ul className="space-y-3">
                   <li><Link href="/login" className="text-lg text-white hover:text-primary transition-colors block">Login</Link></li>
                   <li><Link href="/dashboard" className="text-lg text-white hover:text-primary transition-colors block">Dashboard</Link></li>
-                  <li><span className="text-lg text-textMuted cursor-not-allowed">Admin (Soon)</span></li>
+
                 </ul>
               </div>
               <div className="space-y-4">
@@ -380,11 +380,7 @@ export default function Home() {
                       <a href="https://linkedin.com/in/milind899" target="_blank" className="text-lg text-white hover:text-primary transition-colors block px-2 py-1">LinkedIn</a>
                     </MagneticButton>
                   </li>
-                  <li className="block w-fit">
-                    <MagneticButton>
-                      <a href="mailto:contact@milind.dev" className="text-lg text-white hover:text-primary transition-colors block px-2 py-1">Email</a>
-                    </MagneticButton>
-                  </li>
+
                 </ul>
               </div>
             </div>
@@ -400,7 +396,6 @@ export default function Home() {
 
             <div className="flex items-center gap-6">
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-              <Link href="#" className="hover:text-white transition-colors">Terms</Link>
               <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                 <span className="text-xs font-medium text-white">All Systems Normal</span>

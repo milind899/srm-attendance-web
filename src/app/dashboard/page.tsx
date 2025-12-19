@@ -574,7 +574,7 @@ export default function Dashboard() {
 
                             {/* Subtext */}
                             <h2 className="text-xl text-[#8B8D98] font-medium mb-1">Predicted GPA</h2>
-                            <p className="text-sm text-[#52525B]">Based on target grades below</p>
+                            <p className="text-sm text-[#52525B]">Based on target grades below. Adjust credits per subject for accuracy.</p>
                         </div>
 
                         {/* Grades Cards Grid - New Components */}
