@@ -18,6 +18,8 @@ import Image from 'next/image';
 type Tab = 'attendance' | 'marks' | 'grades';
 type GradeMode = 'predictor' | 'calculator';
 
+import { InstallPWA } from '@/components/InstallPWA';
+
 export default function Dashboard() {
     const router = useRouter();
     const [data, setData] = useState<AttendanceData | null>(null);
@@ -346,7 +348,7 @@ export default function Dashboard() {
                             <Share2 size={22} className="sm:w-[18px] sm:h-[18px]" />
                         </button>
 
-
+                        <InstallPWA minimal />
 
                         <span className="text-sm text-textMuted hidden sm:block">{data.studentName || 'Student'}</span>
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent-yellow flex items-center justify-center text-white text-sm font-bold">

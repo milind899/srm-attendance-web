@@ -7,6 +7,7 @@ import { InteractiveGraph } from '@/components/InteractiveGraph';
 import { DecryptText } from '@/components/DecryptText';
 import { MatrixBackground } from '@/components/MatrixBackground';
 import MagneticButton from '@/components/ui/MagneticButton';
+import { InstallPWA } from '@/components/InstallPWA';
 
 import Image from 'next/image';
 
@@ -55,6 +56,7 @@ export default function Home() {
             >
               Log in
             </button>
+            <InstallPWA />
 
             {showLoginMenu && (
               <div className="absolute top-12 right-0 bg-surface border border-border rounded-lg shadow-xl overflow-hidden min-w-[160px] animate-fade-in-up">

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Trash2, RotateCcw } from 'lucide-react';
 import { GRADES_ENT, GRADES_FSH } from '@/lib/gradings';
 import { DecryptText } from './DecryptText';
@@ -12,13 +12,29 @@ interface SubjectRow {
 export function GPACalculator({ department }: { department: string }) {
     const GRADES = department === 'FSH' ? GRADES_FSH : GRADES_ENT;
 
-    const [subjects, setSubjects] = useState<SubjectRow[]>([
-        { id: '1', grade: 'O', credits: 4 },
-        { id: '2', grade: 'A+', credits: 4 },
-        { id: '3', grade: 'A', credits: 3 },
-        { id: '4', grade: 'B+', credits: 3 },
-        { id: '5', grade: 'B', credits: 2 },
-    ]);
+    const [subjects, setSubjects] = useState<SubjectRow[]>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('gpa-calculator-subjects');
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    console.error('Failed to parse saved subjects', e);
+                }
+            }
+        }
+        return [
+            { id: '1', grade: 'O', credits: 4 },
+            { id: '2', grade: 'A+', credits: 4 },
+            { id: '3', grade: 'A', credits: 3 },
+            { id: '4', grade: 'B+', credits: 3 },
+            { id: '5', grade: 'B', credits: 2 },
+        ];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('gpa-calculator-subjects', JSON.stringify(subjects));
+    }, [subjects]);
 
     const addSubject = () => {
         setSubjects([
