@@ -32,7 +32,7 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
 
     const pipes = useRef<{ x: number; topHeight: number; passed: boolean }[]>([]);
 
-    // Input lock ref to prevent accidental starts
+    // Input lock ref
     const inputLocked = useRef(true);
 
     // Load High Score
@@ -41,7 +41,7 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
         if (stored) setHighScore(parseInt(stored));
     }, []);
 
-    // Game Logic Effect - Depends on resetCount to "restart" the loop cleanly
+    // Game Logic
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -51,12 +51,12 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
         let animationFrameId: number;
         let unlockTimer: NodeJS.Timeout;
 
-        // Reset state on mount/reset
+        // Reset state
         gameState.current = { score: 0, gameOver: false, gameStarted: false, frames: 0 };
         pipes.current = [];
         student.current.velocity = 0;
 
-        // Initial Input Lock (500ms safety buffer)
+        // Initial Input Lock
         inputLocked.current = true;
         unlockTimer = setTimeout(() => {
             inputLocked.current = false;
@@ -73,12 +73,12 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
         window.addEventListener('resize', resize);
         resize();
 
-        // Constants
-        const GRAVITY = 0.5;
-        const JUMP = -8;
-        const PIPE_SPEED = 3;
-        const PIPE_SPAWN_RATE = 120;
-        const GAP_SIZE = 220;
+        // --- NEW PHYSICS ---
+        const GRAVITY = 0.8;      // Stronger gravity (was 0.5)
+        const JUMP = -11.5;       // Stronger jump (was -8)
+        const PIPE_SPEED = 3.5;   // Faster flow
+        const PIPE_SPAWN_RATE = 100; // Adjusted spawn rate
+        const GAP_SIZE = 230;     // Slightly looser gap
 
         const loop = () => {
             ctx.fillStyle = '#0B0C0E';
@@ -91,7 +91,8 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
             // WAITING
             if (!state.gameStarted) {
                 stud.y = canvas.height / 2 + Math.sin(state.frames * 0.05) * 10;
-                drawScene(ctx, canvas, stud, pipeList);
+                // No rotation
+                drawScene(ctx, canvas, stud, pipeList, 0);
                 state.frames++;
                 if (!state.gameOver) animationFrameId = requestAnimationFrame(loop);
                 return;
@@ -99,7 +100,8 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
 
             // GAME OVER
             if (state.gameOver) {
-                drawScene(ctx, canvas, stud, pipeList);
+                // Faceplant rotation
+                drawScene(ctx, canvas, stud, pipeList, Math.PI / 2);
                 return;
             }
 
@@ -108,15 +110,15 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
             stud.y += stud.velocity;
             state.frames++;
 
-            // Spawn Pipes (DELAYED START: Wait 200 frames -> ~3.5s buffer)
-            if (state.frames > 200 && state.frames % PIPE_SPAWN_RATE === 0) {
+            // Spawn
+            if (state.frames > 150 && state.frames % PIPE_SPAWN_RATE === 0) {
                 const minHeight = 100;
                 const maxHeight = canvas.height - GAP_SIZE - minHeight;
                 const height = Math.floor(Math.random() * (maxHeight - minHeight + 1) + minHeight);
                 pipeList.push({ x: canvas.width, topHeight: height, passed: false });
             }
 
-            // Move & Collide
+            // Move
             for (let i = pipeList.length - 1; i >= 0; i--) {
                 const p = pipeList[i];
                 p.x -= PIPE_SPEED;
@@ -142,31 +144,39 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
                 triggerGameOver();
             }
 
-            drawScene(ctx, canvas, stud, pipeList);
+            // Rotation Logic
+            let rotation = Math.min(Math.PI / 3, Math.max(-0.5, (stud.velocity * 0.1)));
+
+            drawScene(ctx, canvas, stud, pipeList, rotation);
             animationFrameId = requestAnimationFrame(loop);
         };
 
-        const drawScene = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, stud: any, pipeList: any[]) => {
+        const drawScene = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, stud: any, pipeList: any[], rotation: number) => {
             // Pipes
             ctx.lineWidth = 3;
             pipeList.forEach(p => {
                 ctx.fillStyle = '#22C55E'; ctx.strokeStyle = '#14532d';
                 ctx.fillRect(p.x, 0, 50, p.topHeight); ctx.strokeRect(p.x, 0, 50, p.topHeight);
-
                 ctx.fillStyle = '#16a34a'; // Cap
                 ctx.fillRect(p.x - 2, p.topHeight - 20, 54, 20); ctx.strokeRect(p.x - 2, p.topHeight - 20, 54, 20);
 
                 const bottomY = p.topHeight + GAP_SIZE;
                 ctx.fillStyle = '#22C55E';
                 ctx.fillRect(p.x, bottomY, 50, canvas.height - bottomY); ctx.strokeRect(p.x, bottomY, 50, canvas.height - bottomY);
-
                 ctx.fillStyle = '#16a34a'; // Cap
                 ctx.fillRect(p.x - 2, bottomY, 54, 20); ctx.strokeRect(p.x - 2, bottomY, 54, 20);
             });
 
-            // Student
-            ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText('🧑‍🎓', stud.x, stud.y);
+            // Student with Rotation
+            ctx.save();
+            ctx.translate(stud.x, stud.y);
+            ctx.rotate(rotation);
+            ctx.font = '40px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // Draw at 0,0 relative to translation
+            ctx.fillText('🧑‍🎓', 0, 0);
+            ctx.restore();
 
             // Ground
             ctx.fillStyle = '#333'; ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
@@ -186,7 +196,7 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
             e.stopPropagation();
             if (e.type === 'keydown') e.preventDefault();
 
-            if (inputLocked.current) return; // IGNORE INPUT IF LOCKED
+            if (inputLocked.current) return;
 
             const state = gameState.current;
             if (state.gameOver) return;
@@ -229,7 +239,7 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
         setScoreDisplay(0);
         setGameOverDisplay(false);
         setGameStartedDisplay(false);
-        setResetCount(c => c + 1); // Trigger effect to restart
+        setResetCount(c => c + 1);
     };
 
     return (
