@@ -30,7 +30,7 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
         x: 50,
         y: 300,
         velocity: 0,
-        radius: 15,
+        radius: 15, // Smaller hitbox by default (Zen Mode)
         rotation: 0
     });
 
@@ -81,12 +81,12 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
         window.addEventListener('resize', resize);
         resize();
 
-        // --- ULTRA EASY MODE (Moon Gravity) ---
-        const GRAVITY = 0.3;      // Feather-light
-        const JUMP = -7;          // Gentle push
-        const BASE_SPEED = 2;     // Walking pace
-        const SPAWN_RATE = 160;   // Very spaced out
-        const GAP_SIZE = 280;     // Huge gap (can't miss)
+        // --- ZEN MODE (Impossible to fail?) ---
+        const GRAVITY = 0.25;     // Anti-gravity
+        const JUMP = -6;          // Gentle hop
+        const BASE_SPEED = 1.8;   // Crawling
+        const SPAWN_RATE = 200;   // Once in a blue moon
+        const GAP_SIZE = 350;     // Barn door
 
         const loop = () => {
             ctx.fillStyle = '#0B0C0E';
@@ -112,8 +112,8 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
                     if (powerup.timeLeft % 60 === 0) {
                         setActivePowerupDisplay({ type: powerup.type, timeLeft: Math.ceil(powerup.timeLeft / 60) });
                     }
-                    if (powerup.type === 'SHRINK') currentRecall = 12;
-                    if (powerup.type === 'SLOW') currentSpeed = 1.5;   // Super slow
+                    if (powerup.type === 'SHRINK') currentRecall = 10;
+                    if (powerup.type === 'SLOW') currentSpeed = 1.0;
                     if (powerup.type === 'GHOST') isGhost = true;
                 }
             }
@@ -135,9 +135,9 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
 
             // --- PLAYING ---
 
-            // Physics (Caps fall speed to prevent plummeting)
+            // Physics
             stud.velocity += GRAVITY;
-            if (stud.velocity > 6) stud.velocity = 6;
+            if (stud.velocity > 5) stud.velocity = 5;
 
             stud.y += stud.velocity;
 
@@ -170,8 +170,7 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
             const effectiveSpawnRate = powerup?.type === 'SLOW' ? Math.floor(SPAWN_RATE * 1.5) : SPAWN_RATE;
 
             if (state.frames > 100 && state.frames % effectiveSpawnRate === 0) {
-                const minHeight = 100; // Keep min height reasonable
-                // Ensure there's actually space
+                const minHeight = 100;
                 const maxHeight = Math.max(minHeight + 50, canvas.height - GAP_SIZE - minHeight);
                 const height = Math.floor(Math.random() * (maxHeight - minHeight + 1) + minHeight);
                 pipeList.push({ x: canvas.width, topHeight: height, passed: false });
@@ -375,8 +374,8 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
                 {activePowerupDisplay && (
                     <div className="absolute top-16 left-1/2 -translate-x-1/2 flex items-center gap-3 animate-bounce-in">
                         <div className={`p-3 rounded-full shadow-lg shadow-white/10 ${activePowerupDisplay.type === 'GHOST' ? 'bg-blue-500' :
-                            activePowerupDisplay.type === 'SHRINK' ? 'bg-purple-500' :
-                                'bg-green-500'
+                                activePowerupDisplay.type === 'SHRINK' ? 'bg-purple-500' :
+                                    'bg-green-500'
                             }`}>
                             {activePowerupDisplay.type === 'GHOST' && <Shield size={24} className="text-white animate-pulse" />}
                             {activePowerupDisplay.type === 'SHRINK' && <Minimize2 size={24} className="text-white animate-pulse" />}
