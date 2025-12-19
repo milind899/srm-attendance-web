@@ -19,6 +19,7 @@ type Tab = 'attendance' | 'marks' | 'grades';
 type GradeMode = 'predictor' | 'calculator';
 
 import { InstallPWA } from '@/components/InstallPWA';
+import { HiddenGame } from '@/components/HiddenGame';
 
 export default function Dashboard() {
     const router = useRouter();
@@ -83,6 +84,48 @@ export default function Dashboard() {
         setToastType(type);
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
+    };
+
+    // Game Easter Egg State
+    const [showGame, setShowGame] = useState(false);
+    const [logoClicks, setLogoClicks] = useState(0);
+
+    // Konami Code Listener
+    useEffect(() => {
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let konamiIndex = 0;
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === konamiCode[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    setShowGame(true);
+                    konamiIndex = 0;
+                }
+            } else {
+                konamiIndex = 0;
+            }
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, []);
+
+    const handleLogoClick = (e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent navigation if clicking rapidly?
+        // Actually Link shouldn't be prevented unless necessary.
+        // Let's just increment. If they click fast, they might nav, so maybe make it a div inside Link or handle onClick on Link.
+        setLogoClicks(prev => {
+            const next = prev + 1;
+            if (next >= 5) {
+                setShowGame(true);
+                return 0;
+            }
+            return next;
+        });
+
+        // Reset clicks after 2 seconds of inactivity
+        setTimeout(() => setLogoClicks(0), 2000);
     };
 
     useEffect(() => {
@@ -259,6 +302,11 @@ export default function Dashboard() {
             showToastNotification(errorMessage, 'error');
             setMarksError(errorMessage);
 
+            // Show game option on network error (simple heuristic)
+            if (errorMessage.includes('Failed') || errorMessage.includes('Network') || errorMessage.includes('error')) {
+                // We add a button in the UI, not here.
+            }
+
             // If it looks like a session error, redirect to login
             if (errorMessage.toLowerCase().includes('session') ||
                 errorMessage.toLowerCase().includes('expired') ||
@@ -310,6 +358,7 @@ export default function Dashboard() {
 
     return (
         <>
+            {showGame && <HiddenGame onClose={() => setShowGame(false)} />}
             {/* Background Glow Effects - like homepage */}
             <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-glow-gradient opacity-40 pointer-events-none z-0" />
             <div className="fixed top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none z-0" />
@@ -317,7 +366,10 @@ export default function Dashboard() {
             {/* Navbar */}
             <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-white/10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-3">
+                    <Link href="/" className="flex items-center gap-3" onClick={(e) => {
+                        // Allow navigation on simple click, but track multiple clicks
+                        handleLogoClick(e);
+                    }}>
                         <Image src="/logo.png" alt="AttendX" width={40} height={40} className="rounded-xl shadow-lg shadow-indigo-500/20" />
                         <span className="font-bold text-xl tracking-tight text-white/90">AttendX</span>
                     </Link>
@@ -522,9 +574,17 @@ export default function Dashboard() {
                         ) : marksError ? (
                             <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
                                 <p className="text-red-400 mb-6">{marksError}</p>
-                                <button onClick={() => router.push(`/login?dept=${department}`)} className="bg-red-500 text-white px-6 py-3 rounded-full font-medium hover:bg-red-600 transition-colors">
-                                    Login Again →
-                                </button>
+                                <div className="flex flex-col items-center gap-4">
+                                    <button onClick={() => router.push(`/login?dept=${department}`)} className="bg-red-500 text-white px-6 py-3 rounded-full font-medium hover:bg-red-600 transition-colors">
+                                        Login Again →
+                                    </button>
+                                    <button
+                                        onClick={() => setShowGame(true)}
+                                        className="text-textMuted hover:text-white text-sm underline decoration-dotted"
+                                    >
+                                        Waiting? Play a game
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             <div className="opacity-0 animate-blur-in delay-200">
