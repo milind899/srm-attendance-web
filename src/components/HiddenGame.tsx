@@ -73,12 +73,12 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
         window.addEventListener('resize', resize);
         resize();
 
-        // --- SMOOTH PHYSICS ---
-        const GRAVITY = 0.4;      // Floatier (was 0.8)
-        const JUMP = -8;          // Gentle jump (was -11.5)
-        const PIPE_SPEED = 2.5;   // Relaxed (was 3.5)
-        const PIPE_SPAWN_RATE = 140; // Spaced out
-        const GAP_SIZE = 240;     // Generous gap
+        // --- SUPER EASY MODE ---
+        const GRAVITY = 0.35;        // Feather-light
+        const JUMP = -9;             // Strong lift
+        const PIPE_SPEED = 2.2;      // Slow
+        const PIPE_SPAWN_RATE = 150; // Spaced out
+        const GAP_SIZE = 260;        // Huge gaps
 
         const loop = () => {
             ctx.fillStyle = '#0B0C0E';
@@ -108,8 +108,8 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
             // PLAYING
             stud.velocity += GRAVITY;
 
-            // Cap velocity so you don't fall like a rock
-            if (stud.velocity > 10) stud.velocity = 10;
+            // Soft Cap velocity (prevent rock-fall)
+            if (stud.velocity > 8) stud.velocity = 8;
 
             stud.y += stud.velocity;
             state.frames++;
@@ -178,7 +178,6 @@ export function HiddenGame({ onClose }: HiddenGameProps) {
             ctx.font = '40px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            // Draw at 0,0 relative to translation
             ctx.fillText('🧑‍🎓', 0, 0);
             ctx.restore();
 
