@@ -113,6 +113,9 @@ export default function Home() {
             >
               FSH Portal
             </Link>
+            <div className="px-4 py-2">
+              <InstallPWA />
+            </div>
             <div className="h-px bg-border my-2"></div>
             <Link
               href="/privacy"
