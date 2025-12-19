@@ -11,32 +11,12 @@ import AttendanceCard from '@/components/AttendanceCard';
 import { SubjectTile } from '@/components/SubjectTile';
 import { SubjectDetailModal } from '@/components/SubjectDetailModal';
 import { GradeCard } from '@/components/GradeCard';
+import { GPACalculator } from '@/components/GPACalculator';
+import { GRADES_ENT, GRADES_FSH } from '@/lib/gradings';
 import Image from 'next/image';
 
 type Tab = 'attendance' | 'marks' | 'grades';
-
-// Grade thresholds for 100-based total
-// ENT Grading
-const GRADES_ENT = [
-    { grade: 'O', min: 91, gp: 10, color: 'text-emerald-400', bg: 'bg-emerald-500' },
-    { grade: 'A+', min: 81, gp: 9, color: 'text-green-400', bg: 'bg-green-500' },
-    { grade: 'A', min: 71, gp: 8, color: 'text-lime-400', bg: 'bg-lime-500' },
-    { grade: 'B+', min: 61, gp: 7, color: 'text-yellow-400', bg: 'bg-yellow-500' },
-    { grade: 'B', min: 51, gp: 6, color: 'text-orange-400', bg: 'bg-orange-500' },
-    { grade: 'C', min: 45, gp: 5, color: 'text-red-400', bg: 'bg-red-500' },
-    { grade: 'F', min: 0, gp: 0, color: 'text-red-600', bg: 'bg-red-600' },
-];
-
-// FSH Grading
-const GRADES_FSH = [
-    { grade: 'O', min: 91, gp: 10, color: 'text-emerald-400', bg: 'bg-emerald-500' },
-    { grade: 'A+', min: 81, gp: 9, color: 'text-green-400', bg: 'bg-green-500' },
-    { grade: 'A', min: 71, gp: 8, color: 'text-lime-400', bg: 'bg-lime-500' },
-    { grade: 'B+', min: 61, gp: 7, color: 'text-yellow-400', bg: 'bg-yellow-500' },
-    { grade: 'B', min: 56, gp: 6, color: 'text-orange-400', bg: 'bg-orange-500' },
-    { grade: 'C', min: 50, gp: 5, color: 'text-red-400', bg: 'bg-red-500' },
-    { grade: 'F', min: 0, gp: 0, color: 'text-red-600', bg: 'bg-red-600' },
-];
+type GradeMode = 'predictor' | 'calculator';
 
 export default function Dashboard() {
     const router = useRouter();
@@ -44,6 +24,7 @@ export default function Dashboard() {
     const [department, setDepartment] = useState<string>('ENT');
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<Tab>('attendance');
+    const [gradeMode, setGradeMode] = useState<GradeMode>('predictor');
 
     // Selected Subject for Modal
     const [selectedSubject, setSelectedSubject] = useState<AttendanceRecord | null>(null);
@@ -559,47 +540,77 @@ export default function Dashboard() {
                 {/* Grades Tab */}
                 {activeTab === 'grades' && (
                     <div className="max-w-6xl mx-auto px-4 pb-20">
-                        {/* Projected SGPA Card - From Image */}
-                        {/* Grade Predictor Hero - Centered per new design */}
-                        <div className="flex flex-col items-center justify-center py-10 opacity-0 animate-blur-in text-center">
-                            {/* Pill */}
-                            <div className="inline-flex items-center gap-2 rounded-full bg-[#1A1825] border border-[#2D2B3D] px-4 py-1.5 mb-6">
-                                <div className="w-2 h-2 rounded-full bg-[#8B5CF6]"></div>
-                                <span className="text-sm font-medium text-[#8B8D98]">Grade Predictor</span>
-                            </div>
-
-                            {/* Huge Grade */}
-                            <h1 className="text-7xl sm:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-[#FDE047] to-[#EAB308] mb-2 tracking-tight">
-                                <DecryptText text={overallSGPA()} speed={50} delay={200} />
-                            </h1>
-
-                            {/* Subtext */}
-                            <h2 className="text-xl text-[#8B8D98] font-medium mb-1">Predicted GPA</h2>
-                            <p className="text-sm text-[#52525B]">Based on target grades below. Adjust credits per subject for accuracy.</p>
-                        </div>
-
-                        {/* Grades Cards Grid - New Components */}
-                        {subjectsWithMarks.length > 0 ? (
-                            <div className="opacity-0 animate-blur-in delay-200">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {subjectsWithMarks.map((subject, i) => (
-                                        <GradeCard
-                                            key={`${subject.subjectCode}-${i}`}
-                                            subject={subject}
-                                            startCredits={subjectsWithMarks.length === 5 ? 4 : 3} // Heuristic default
-                                            department={department}
-                                            onUpdate={handleGradeUpdate}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
-                                <p className="text-textMuted mb-6">No marks data available to predict grades.</p>
-                                <button onClick={() => setActiveTab('marks')} className="bg-[#EEEEF0] text-black px-6 py-3 rounded-full font-medium hover:bg-white transition-colors">
-                                    Go to Marks →
+                        {/* Grade Mode Toggle */}
+                        <div className="flex justify-center mb-10 opacity-0 animate-blur-in">
+                            <div className="bg-[#1A1825] p-1 rounded-full border border-white/10 flex relative">
+                                <div
+                                    className={`absolute top-1 bottom-1 w-[120px] bg-[#5B50E5] rounded-full transition-all duration-300 ${gradeMode === 'predictor' ? 'left-1' : 'left-[125px]'
+                                        }`}
+                                />
+                                <button
+                                    onClick={() => setGradeMode('predictor')}
+                                    className={`relative z-10 w-[120px] py-2 text-sm font-medium rounded-full transition-colors ${gradeMode === 'predictor' ? 'text-white' : 'text-textMuted hover:text-white'
+                                        }`}
+                                >
+                                    Predictor
+                                </button>
+                                <button
+                                    onClick={() => setGradeMode('calculator')}
+                                    className={`relative z-10 w-[120px] py-2 text-sm font-medium rounded-full transition-colors ${gradeMode === 'calculator' ? 'text-white' : 'text-textMuted hover:text-white'
+                                        }`}
+                                >
+                                    Calculator
                                 </button>
                             </div>
+                        </div>
+
+                        {gradeMode === 'calculator' ? (
+                            <GPACalculator department={department} />
+                        ) : (
+                            <>
+                                {/* Projected SGPA Card - From Image */}
+                                {/* Grade Predictor Hero - Centered per new design */}
+                                <div className="flex flex-col items-center justify-center py-10 opacity-0 animate-blur-in text-center">
+                                    {/* Pill */}
+                                    <div className="inline-flex items-center gap-2 rounded-full bg-[#1A1825] border border-[#2D2B3D] px-4 py-1.5 mb-6">
+                                        <div className="w-2 h-2 rounded-full bg-[#8B5CF6]"></div>
+                                        <span className="text-sm font-medium text-[#8B8D98]">Grade Predictor</span>
+                                    </div>
+
+                                    {/* Huge Grade */}
+                                    <h1 className="text-7xl sm:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-[#FDE047] to-[#EAB308] mb-2 tracking-tight">
+                                        <DecryptText text={overallSGPA()} speed={50} delay={200} />
+                                    </h1>
+
+                                    {/* Subtext */}
+                                    <h2 className="text-xl text-[#8B8D98] font-medium mb-1">Predicted GPA</h2>
+                                    <p className="text-sm text-[#52525B]">Based on target grades below. Adjust credits per subject for accuracy.</p>
+                                </div>
+
+                                {/* Grades Cards Grid - New Components */}
+                                {subjectsWithMarks.length > 0 ? (
+                                    <div className="opacity-0 animate-blur-in delay-200">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {subjectsWithMarks.map((subject, i) => (
+                                                <GradeCard
+                                                    key={`${subject.subjectCode}-${i}`}
+                                                    subject={subject}
+                                                    startCredits={subjectsWithMarks.length === 5 ? 4 : 3} // Heuristic default
+                                                    department={department}
+                                                    onUpdate={handleGradeUpdate}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 opacity-0 animate-blur-in delay-200">
+                                        <p className="text-textMuted mb-6">No marks data available to predict grades.</p>
+                                        <button onClick={() => setActiveTab('marks')} className="bg-[#EEEEF0] text-black px-6 py-3 rounded-full font-medium hover:bg-white transition-colors">
+                                            Go to Marks →
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 )}

@@ -3,27 +3,10 @@ import { SubjectMarks } from '@/lib/types';
 import { useState, useEffect } from 'react';
 import { CheckCircle2, Circle } from 'lucide-react';
 
-// ENT Grading (Standard)
-const GRADES_ENT = [
-    { grade: 'O', min: 91, gp: 10 },
-    { grade: 'A+', min: 81, gp: 9 },
-    { grade: 'A', min: 71, gp: 8 },
-    { grade: 'B+', min: 61, gp: 7 },
-    { grade: 'B', min: 51, gp: 6 },
-    { grade: 'C', min: 45, gp: 5 }, // Usually 45 or 50 for ENT, keeping standard for now
-    { grade: 'F', min: 0, gp: 0 },
-];
-
-// FSH Grading (From User Image)
-const GRADES_FSH = [
-    { grade: 'O', min: 91, gp: 10 },
-    { grade: 'A+', min: 81, gp: 9 },
-    { grade: 'A', min: 71, gp: 8 },
-    { grade: 'B+', min: 61, gp: 7 },
-    { grade: 'B', min: 56, gp: 6 }, // 56-60
-    { grade: 'C', min: 50, gp: 5 }, // 50-55
-    { grade: 'F', min: 0, gp: 0 }, // < 50
-];
+import { SubjectMarks } from '@/lib/types';
+import { useState, useEffect } from 'react';
+import { CheckCircle2, Circle } from 'lucide-react';
+import { GRADES_ENT, GRADES_FSH } from '@/lib/gradings';
 
 interface GradeCardProps {
     subject: SubjectMarks;
