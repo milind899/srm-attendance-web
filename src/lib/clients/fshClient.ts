@@ -91,8 +91,15 @@ export class FshClient {
                 });
 
                 if (loginResp.data.includes('Invalid credentials') || loginResp.data.includes('Invalid Captcha')) {
+                    console.error('[FshClient] Login failed with expected error string.');
                     const $ = cheerio.load(loginResp.data);
-                    const errorMsg = $('.alert-danger').text().trim() || 'Login failed (Invalid Credentials/Captcha)';
+                    const alertText = $('.alert-danger').text().trim();
+                    console.error(`[FshClient] Alert text found: "${alertText}"`);
+
+                    // Log the first 500 chars of body for deep debugging if needed
+                    console.error('[FshClient] Response snippet:', loginResp.data.substring(0, 500));
+
+                    const errorMsg = alertText || 'Login failed (Invalid Credentials/Captcha)';
                     return { success: false, error: errorMsg };
                 }
 

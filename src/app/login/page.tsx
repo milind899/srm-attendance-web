@@ -212,7 +212,7 @@ function LoginForm() {
                                     type="text"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full bg-[#0B0C0E]/50 border border-border/50 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-primary focus:shadow-[0_0_30px_rgba(99,102,241,0.25)] transition-all duration-300 placeholder:text-textMuted/50"
+                                    className="w-full bg-[#0B0C0E]/50 border border-border/50 rounded-xl px-4 py-3 text-base text-white outline-none focus:border-primary focus:shadow-[0_0_30px_rgba(99,102,241,0.25)] transition-all duration-300 placeholder:text-textMuted/50"
                                     placeholder={dept === 'ENT' ? "student@srmist.edu.in" : "NetID (e.g., ab1234)"}
                                     required
                                 />
@@ -225,7 +225,7 @@ function LoginForm() {
                                         type={showPassword ? "text" : "password"}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full bg-[#0B0C0E]/50 border border-border/50 rounded-xl px-4 py-3 pr-12 text-sm text-white outline-none focus:border-primary focus:shadow-[0_0_30px_rgba(99,102,241,0.25)] transition-all duration-300 placeholder:text-textMuted/50"
+                                        className="w-full bg-[#0B0C0E]/50 border border-border/50 rounded-xl px-4 py-3 pr-12 text-base text-white outline-none focus:border-primary focus:shadow-[0_0_30px_rgba(99,102,241,0.25)] transition-all duration-300 placeholder:text-textMuted/50"
                                         placeholder="••••••••"
                                         required
                                     />
@@ -234,7 +234,7 @@ function LoginForm() {
                                         onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-textMuted hover:text-white transition-colors"
                                     >
-                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 </div>
                             </div>
@@ -247,7 +247,7 @@ function LoginForm() {
                                             type="text"
                                             value={captchaVal}
                                             onChange={(e) => setCaptchaVal(e.target.value)}
-                                            className="flex-1 min-w-0 bg-[#0B0C0E]/50 border border-border/50 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-primary focus:shadow-[0_0_30px_rgba(99,102,241,0.25)] transition-all duration-300 placeholder:text-textMuted/50"
+                                            className="flex-1 min-w-0 bg-[#0B0C0E]/50 border border-border/50 rounded-xl px-4 py-3 text-base text-white outline-none focus:border-primary focus:shadow-[0_0_30px_rgba(99,102,241,0.25)] transition-all duration-300 placeholder:text-textMuted/50"
                                             placeholder="Enter code"
                                             required
                                         />

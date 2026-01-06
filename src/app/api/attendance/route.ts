@@ -50,7 +50,7 @@ export async function POST(request: Request) {
                 const client = new FshClient();
                 console.error('[API] Calling loginAndFetch...');
                 result = await client.loginAndFetch(username, password, captcha, csrfToken, cookies);
-                console.error('[API] Result:', result.success);
+                console.error(`[API] Result success: ${result.success}, Error: ${result.error}`);
             } catch (err: any) {
                 console.error('[API] FSH Client Error:', err.message);
                 return NextResponse.json({

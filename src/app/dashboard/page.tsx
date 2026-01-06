@@ -433,10 +433,10 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            <main className="min-h-screen bg-background text-textMain selection:bg-primary/30 selection:text-white font-sans overflow-x-hidden relative z-10 pt-28 md:pt-32 pb-32 md:pb-10 animate-scale-in origin-center">
+            <main className="min-h-screen bg-background text-textMain selection:bg-primary/30 selection:text-white font-sans overflow-x-hidden relative z-10 pt-24 md:pt-32 pb-32 md:pb-10 animate-scale-in origin-center">
                 {/* Attendance Tab */}
                 {activeTab === 'attendance' && (
-                    <div className="max-w-6xl mx-auto px-4">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6">
                         {/* Overall Attendance - Bento Style */}
                         <div className="mb-6 opacity-0 animate-blur-in">
                             <div className={`relative overflow-hidden rounded-3xl p-6 sm:p-8 border shadow-xl ${overallPercentage >= 75
