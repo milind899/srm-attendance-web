@@ -7,6 +7,11 @@ export interface AttendanceRecord {
     percentage: number;
     classesToMiss?: number;
     classesToAttend?: number;
+    // ENT-specific fields
+    credits?: number;
+    faculty?: string;
+    slot?: string;
+    room?: string;
 }
 
 // Profile Data
@@ -83,5 +88,30 @@ export interface StudentProfile {
 export interface ProfileResult {
     success: boolean;
     data?: StudentProfile;
+    error?: string;
+}
+
+// Timetable Types
+export interface EnrolledSlot {
+    subjectCode: string;
+    subjectName: string;
+    slot: string; // e.g. "A", "G1", "P1"
+}
+
+export interface TimeTableSlot {
+    dayOrder: string; // "1", "2", "3", "4", "5"
+    period: string;   // "1" to "10" (or time range)
+    slotType: string; // "A", "B", "G", etc.
+}
+
+export interface TimetableData {
+    enrolledSlots: EnrolledSlot[];
+    masterSlots: TimeTableSlot[];
+    batch: string; // "1" or "2"
+}
+
+export interface TimetableResult {
+    success: boolean;
+    data?: TimetableData;
     error?: string;
 }

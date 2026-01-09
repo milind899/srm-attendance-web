@@ -12,7 +12,9 @@ const requestSchema = z.object({
     password: z.string().min(1),
     captcha: z.string().optional(),
     cookies: z.string().optional(),
-    csrfToken: z.string().optional()
+    csrfToken: z.string().optional(),
+    action: z.enum(['login', 'timetable']).optional().default('login'),
+    batch: z.string().optional()
 });
 
 export async function POST(request: Request) {
@@ -28,14 +30,25 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid Input', details: parseResult.error.format() }, { status: 400 });
         }
 
-        const { department, username, password, captcha, cookies, csrfToken } = parseResult.data;
+        const { department, username, password, captcha, cookies, csrfToken, action, batch } = parseResult.data;
 
         let result: any;
         if (department === 'ENT') {
-            console.error(`[API] Starting ENT HTTP client for user: ${username}`);
+            console.error(`[API] Starting ENT HTTP client for user: ${username}, action: ${action}`);
             const client = new EntClient();
-            result = await client.loginAndFetch(username, password);
+
+            if (action === 'timetable') {
+                result = await client.getTimetable(username, password, batch || '1');
+            } else {
+                result = await client.loginAndFetch(username, password);
+            }
+
         } else {
+            // FSH does not support specific timetable action yet
+            if (action === 'timetable') {
+                return NextResponse.json({ error: 'Timetable not supported for FSH yet' }, { status: 400 });
+            }
+
             console.error(`[API] Starting FSH HTTP scrape for user: ${username}`);
             // Check for required HTTP-mode params
             if (!captcha || !csrfToken || !cookies) {

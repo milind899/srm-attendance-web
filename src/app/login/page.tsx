@@ -183,11 +183,13 @@ function LoginForm() {
                         </button>
                         <button
                             type="button"
-                            disabled
-                            className="flex-1 py-2 sm:py-2.5 text-sm font-medium rounded-lg text-textMuted cursor-not-allowed opacity-50 relative"
+                            onClick={() => router.push('/login?dept=ENT')}
+                            className={`flex-1 py-2 sm:py-2.5 text-sm font-medium rounded-lg transition-all ${dept === 'ENT'
+                                ? 'bg-surfaceHighlight text-white shadow-lg shadow-black/20 border border-border/50'
+                                : 'text-textMuted hover:text-white'
+                                }`}
                         >
                             ENT Portal
-                            <span className="absolute top-1 right-2 w-1.5 h-1.5 bg-yellow-500 rounded-full"></span>
                         </button>
                     </div>
 

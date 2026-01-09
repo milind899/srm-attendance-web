@@ -9,6 +9,7 @@ import { DecryptText } from '@/components/DecryptText';
 import { Loader2, Share2, BarChart3, Award, FileText, RefreshCw, User, CalendarCheck, ClipboardList, GraduationCap } from 'lucide-react';
 import AttendanceCard from '@/components/AttendanceCard';
 import { SubjectTile } from '@/components/SubjectTile';
+import { ENTSubjectCard } from '@/components/ENTSubjectCard';
 import { SubjectDetailModal } from '@/components/SubjectDetailModal';
 import { GradeCard } from '@/components/GradeCard';
 import { GPACalculator } from '@/components/GPACalculator';
@@ -400,6 +401,17 @@ export default function Dashboard() {
                             <Share2 size={22} className="sm:w-[18px] sm:h-[18px]" />
                         </button>
 
+                        {/* ENT Timetable Link */}
+                        {department === 'ENT' && (
+                            <Link
+                                href="/dashboard/timetable"
+                                className="flex items-center justify-center p-3 sm:p-2 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 transition-colors touch-min"
+                                title="View Timetable"
+                            >
+                                <CalendarCheck size={22} className="sm:w-[18px] sm:h-[18px]" />
+                            </Link>
+                        )}
+
                         <InstallPWA minimal />
 
                         <span className="text-sm text-textMuted hidden sm:block">{data.studentName || 'Student'}</span>
@@ -434,85 +446,133 @@ export default function Dashboard() {
             </div>
 
             <main className="min-h-screen bg-background text-textMain selection:bg-primary/30 selection:text-white font-sans overflow-x-hidden relative z-10 pt-24 md:pt-32 pb-32 md:pb-10 animate-scale-in origin-center">
-                {/* Attendance Tab */}
+                {/* Attendance/Subjects Tab */}
                 {activeTab === 'attendance' && (
                     <div className="max-w-6xl mx-auto px-4 sm:px-6">
-                        {/* Overall Attendance - Bento Style */}
-                        <div className="mb-6 opacity-0 animate-blur-in">
-                            <div className={`relative overflow-hidden rounded-3xl p-6 sm:p-8 border shadow-xl ${overallPercentage >= 75
-                                ? 'bg-emerald-500/5 border-emerald-500/20'
-                                : 'bg-red-500/5 border-red-500/20'
-                                }`}>
-
-                                <div className="relative flex flex-col sm:flex-row items-center justify-between gap-6">
-                                    {/* Left: Giant Stats */}
-                                    <div className="flex flex-col sm:flex-row items-center gap-6">
-                                        <div className="relative text-center sm:text-left">
-                                            <div className="text-sm font-medium text-white/50 uppercase tracking-widest mb-1">Overall Attendance</div>
-                                            <div className={`text-6xl sm:text-7xl font-black leading-none tracking-tight ${overallPercentage >= 75 ? 'text-emerald-400' : 'text-red-400'
-                                                }`}>
-                                                <DecryptText text={String(overallPercentage)} speed={100} delay={500} />
-                                                <span className="text-3xl sm:text-4xl text-white/30">%</span>
+                        {/* ENT Layout - Subject focused */}
+                        {department === 'ENT' ? (
+                            <>
+                                {/* ENT Hero Section */}
+                                <div className="mb-8 opacity-0 animate-blur-in">
+                                    <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 border border-primary/20 bg-gradient-to-br from-primary/10 via-transparent to-purple-500/5">
+                                        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                                            <div className="text-center sm:text-left">
+                                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-medium mb-3">
+                                                    <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                                                    Semester 6 • B.Tech
+                                                </div>
+                                                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+                                                    Your Subjects
+                                                </h2>
+                                                <p className="text-white/60">
+                                                    {data.records.length} Subjects • {data.records.reduce((sum, r) => sum + (r.credits || 0), 0)} Credits
+                                                </p>
                                             </div>
-                                        </div>
-
-                                        {/* Divider */}
-                                        <div className="hidden sm:block w-px h-16 bg-white/10"></div>
-
-                                        {/* Hours Pill */}
-                                        <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/5">
-                                            <div className="flex flex-col">
-                                                <span className="text-xs text-white/40 font-medium uppercase">Attended</span>
-                                                <span className="text-lg font-bold text-white">{attendedHours}h</span>
-                                            </div>
-                                            <div className="w-px h-6 bg-white/10"></div>
-                                            <div className="flex flex-col">
-                                                <span className="text-xs text-white/40 font-medium uppercase">Total</span>
-                                                <span className="text-lg font-bold text-white/70">{totalHours}h</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Status Badge */}
-                                    <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl border backdrop-blur-md ${overallPercentage >= 75
-                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                                        : 'bg-red-500/10 border-red-500/20 text-red-400'
-                                        }`}>
-                                        <span className="text-xl font-bold">
-                                            {overallPercentage >= 75 ? '✓' : '⚠'}
-                                        </span>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold whitespace-nowrap">
-                                                {overallPercentage >= 75
-                                                    ? `Safe Margin: ${department === 'FSH' ? Math.max(0, overallCanMiss) : ''}`
-                                                    : `Attendance Lag: ${department === 'FSH' ? Math.max(0, overallNeedToAttend) : '0'}`
-                                                }
-                                            </span>
-                                            <span className="text-xs opacity-70">
-                                                {overallPercentage >= 75 ? 'Classes you can miss' : 'Classes to attend'}
-                                            </span>
+                                            <Link
+                                                href="/dashboard/timetable"
+                                                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-medium transition-all"
+                                            >
+                                                <CalendarCheck size={18} />
+                                                View Timetable
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* Bento Grid - Subjects */}
-                        <div className="opacity-0 animate-blur-in delay-200 mb-24">
-                            <h3 className="text-sm font-medium text-white/50 mb-4 px-1 uppercase tracking-widest">
-                                Your Subjects
-                            </h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                                {data.records.map((record, i) => (
-                                    <SubjectTile
-                                        key={`${record.subjectCode}-${i}`}
-                                        record={record}
-                                        department={department}
-                                        onClick={() => setSelectedSubject(record)}
-                                    />
-                                ))}
-                            </div>
-                        </div>
+                                {/* ENT Subject Cards Grid */}
+                                <div className="opacity-0 animate-blur-in delay-200 mb-24">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {data.records.map((record, i) => (
+                                            <ENTSubjectCard
+                                                key={`${record.subjectCode}-${i}`}
+                                                record={record}
+                                                onClick={() => setSelectedSubject(record)}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            /* FSH Layout - Attendance focused */
+                            <>
+                                {/* Overall Attendance - Bento Style */}
+                                <div className="mb-6 opacity-0 animate-blur-in">
+                                    <div className={`relative overflow-hidden rounded-3xl p-6 sm:p-8 border shadow-xl ${overallPercentage >= 75
+                                        ? 'bg-emerald-500/5 border-emerald-500/20'
+                                        : 'bg-red-500/5 border-red-500/20'
+                                        }`}>
+
+                                        <div className="relative flex flex-col sm:flex-row items-center justify-between gap-6">
+                                            {/* Left: Giant Stats */}
+                                            <div className="flex flex-col sm:flex-row items-center gap-6">
+                                                <div className="relative text-center sm:text-left">
+                                                    <div className="text-sm font-medium text-white/50 uppercase tracking-widest mb-1">Overall Attendance</div>
+                                                    <div className={`text-6xl sm:text-7xl font-black leading-none tracking-tight ${overallPercentage >= 75 ? 'text-emerald-400' : 'text-red-400'
+                                                        }`}>
+                                                        <DecryptText text={String(overallPercentage)} speed={100} delay={500} />
+                                                        <span className="text-3xl sm:text-4xl text-white/30">%</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Divider */}
+                                                <div className="hidden sm:block w-px h-16 bg-white/10"></div>
+
+                                                {/* Hours Pill */}
+                                                <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/5">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs text-white/40 font-medium uppercase">Attended</span>
+                                                        <span className="text-lg font-bold text-white">{attendedHours}h</span>
+                                                    </div>
+                                                    <div className="w-px h-6 bg-white/10"></div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs text-white/40 font-medium uppercase">Total</span>
+                                                        <span className="text-lg font-bold text-white/70">{totalHours}h</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Status Badge */}
+                                            <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl border backdrop-blur-md ${overallPercentage >= 75
+                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                                : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                                }`}>
+                                                <span className="text-xl font-bold">
+                                                    {overallPercentage >= 75 ? '✓' : '⚠'}
+                                                </span>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold whitespace-nowrap">
+                                                        {overallPercentage >= 75
+                                                            ? `Safe Margin: ${Math.max(0, overallCanMiss)}`
+                                                            : `Attendance Lag: ${Math.max(0, overallNeedToAttend)}`
+                                                        }
+                                                    </span>
+                                                    <span className="text-xs opacity-70">
+                                                        {overallPercentage >= 75 ? 'Classes you can miss' : 'Classes to attend'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bento Grid - Subjects */}
+                                <div className="opacity-0 animate-blur-in delay-200 mb-24">
+                                    <h3 className="text-sm font-medium text-white/50 mb-4 px-1 uppercase tracking-widest">
+                                        Your Subjects
+                                    </h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                                        {data.records.map((record, i) => (
+                                            <SubjectTile
+                                                key={`${record.subjectCode}-${i}`}
+                                                record={record}
+                                                department={department}
+                                                onClick={() => setSelectedSubject(record)}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
                         {/* Subject Detail Modal */}
                         {selectedSubject && (
