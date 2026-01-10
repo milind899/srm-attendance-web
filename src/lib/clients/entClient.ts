@@ -218,16 +218,16 @@ export class EntClient {
     async loginAndFetch(username: string, password: string): Promise<any> {
         return this.runPuppeteerAction(username, password, async (page) => {
             console.log('[ENT-PUP] Navigating to My Time Table page...');
-            await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'networkidle2' });
+            await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'domcontentloaded', timeout: 15000 });
 
             console.log('[ENT-PUP] Waiting for table to load...');
             try {
                 // Wait for course codes to appear (pattern like 21CSC303J)
                 await page.waitForFunction(
                     () => /\d{2}[A-Z]{2,4}\d{3}[A-Z]?/.test(document.body.innerText),
-                    { timeout: 15000 }
+                    { timeout: 8000 }
                 );
-                await new Promise(r => setTimeout(r, 500));
+                await new Promise(r => setTimeout(r, 200));
             } catch (e) {
                 console.log('[ENT-PUP] Timeout waiting for course codes.');
             }
