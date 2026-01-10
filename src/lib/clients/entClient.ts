@@ -452,16 +452,17 @@ export class EntClient {
             console.log('[ENT-PUP] Launching browser...');
             const puppeteer = await import('puppeteer');
             browser = await puppeteer.launch({
-                headless: false, // Keep visible for visual debugging
+                headless: true, // Hidden for production experience
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
 
             const page = await browser.newPage();
             // Set viewport to desktop
             await page.setViewport({ width: 1280, height: 800 });
+            await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
             console.log('[ENT-PUP] Navigating to login page...');
-            await page.goto('https://academia.srmist.edu.in/', { waitUntil: 'networkidle2', timeout: 60000 });
+            await page.goto('https://academia.srmist.edu.in/', { waitUntil: 'domcontentloaded', timeout: 15000 });
 
             console.log('[ENT-PUP] Checking for login selectors...');
             // Wait for Zoho login elements. Usually an iframe or redirect happens.
@@ -473,7 +474,7 @@ export class EntClient {
             // Wait for redirect to settle
             // Wait for redirect to settle
             try {
-                await page.waitForNavigation({ timeout: 5000, waitUntil: 'networkidle2' });
+                await page.waitForNavigation({ timeout: 5000, waitUntil: 'domcontentloaded' });
             } catch (e) { }
 
             console.log(`[ENT-PUP] Current URL after initial nav: ${page.url()}`);
@@ -528,7 +529,7 @@ export class EntClient {
                 await page.keyboard.press('Enter');
 
                 console.log('[ENT-PUP] Waiting for navigation after login...');
-                await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 });
+                await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 });
             } else {
                 console.log('[ENT-PUP] Login input not found in any frame.');
                 // Check for "Sign In" button on main page if we are still on academia
