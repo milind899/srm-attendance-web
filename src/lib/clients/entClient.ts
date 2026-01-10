@@ -227,7 +227,7 @@ export class EntClient {
                     () => /\d{2}[A-Z]{2,4}\d{3}[A-Z]?/.test(document.body.innerText),
                     { timeout: 15000 }
                 );
-                await new Promise(r => setTimeout(r, 2000));
+                await new Promise(r => setTimeout(r, 500));
             } catch (e) {
                 console.log('[ENT-PUP] Timeout waiting for course codes.');
             }

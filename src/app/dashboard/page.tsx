@@ -491,7 +491,7 @@ export default function Dashboard() {
 
                                 {/* ENT Subject Cards Grid */}
                                 <div className="opacity-0 animate-blur-in delay-200 mb-24">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                         {/* Deduplicate records by subjectCode + slot */}
                                         {(() => {
                                             const seen = new Set<string>();

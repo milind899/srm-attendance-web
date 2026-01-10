@@ -2,6 +2,7 @@
 import { AttendanceRecord } from '@/lib/types';
 import { X, Calendar, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface SubjectDetailModalProps {
     record: AttendanceRecord;
@@ -11,8 +12,10 @@ interface SubjectDetailModalProps {
 
 export function SubjectDetailModal({ record, department, onClose }: SubjectDetailModalProps) {
     const [isVisible, setIsVisible] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         setIsVisible(true);
         // Prevent body scroll when modal is open
         document.body.style.overflow = 'hidden';
@@ -46,8 +49,8 @@ export function SubjectDetailModal({ record, department, onClose }: SubjectDetai
     const canMiss = calculateCanMiss();
     const needToAttend = calculateNeedToAttend();
 
-    return (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+    const modalContent = (
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center">
             {/* Backdrop */}
             <div
                 className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
@@ -152,4 +155,8 @@ export function SubjectDetailModal({ record, department, onClose }: SubjectDetai
             </div>
         </div>
     );
+
+    // Use portal to render at document root level
+    if (!mounted) return null;
+    return createPortal(modalContent, document.body);
 }

@@ -1,33 +1,32 @@
 'use client';
 
 import { AttendanceRecord } from '@/lib/types';
-import { BookOpen, MapPin, User, Clock } from 'lucide-react';
+import { MapPin, User, GraduationCap } from 'lucide-react';
 
 interface ENTSubjectCardProps {
     record: AttendanceRecord;
     onClick?: () => void;
 }
 
-// Slot color mapping for visual distinction
-const getSlotColor = (slot: string) => {
+// Refined slot colors - softer, more sophisticated palette
+const getSlotStyle = (slot: string) => {
     const baseSlot = slot?.charAt(0)?.toUpperCase() || '';
-    const colors: Record<string, { bg: string; text: string; border: string }> = {
-        'A': { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
-        'B': { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
-        'C': { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
-        'D': { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
-        'E': { bg: 'bg-pink-500/20', text: 'text-pink-400', border: 'border-pink-500/30' },
-        'F': { bg: 'bg-cyan-500/20', text: 'text-cyan-400', border: 'border-cyan-500/30' },
-        'G': { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
-        'P': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-        'L': { bg: 'bg-teal-500/20', text: 'text-teal-400', border: 'border-teal-500/30' },
-        'T': { bg: 'bg-indigo-500/20', text: 'text-indigo-400', border: 'border-indigo-500/30' },
+    const styles: Record<string, { accent: string; bg: string }> = {
+        'A': { accent: 'text-blue-400', bg: 'from-blue-500/10 to-transparent' },
+        'B': { accent: 'text-green-400', bg: 'from-green-500/10 to-transparent' },
+        'C': { accent: 'text-violet-400', bg: 'from-violet-500/10 to-transparent' },
+        'D': { accent: 'text-amber-400', bg: 'from-amber-500/10 to-transparent' },
+        'E': { accent: 'text-pink-400', bg: 'from-pink-500/10 to-transparent' },
+        'F': { accent: 'text-cyan-400', bg: 'from-cyan-500/10 to-transparent' },
+        'G': { accent: 'text-yellow-400', bg: 'from-yellow-500/10 to-transparent' },
+        'P': { accent: 'text-emerald-400', bg: 'from-emerald-500/10 to-transparent' },
+        'L': { accent: 'text-teal-400', bg: 'from-teal-500/10 to-transparent' },
     };
-    return colors[baseSlot] || { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' };
+    return styles[baseSlot] || { accent: 'text-gray-400', bg: 'from-gray-500/10 to-transparent' };
 };
 
 export function ENTSubjectCard({ record, onClick }: ENTSubjectCardProps) {
-    const slotColors = getSlotColor(record.slot || '');
+    const slotStyle = getSlotStyle(record.slot || '');
     const isPractical = record.category === 'Practical' ||
         record.subjectName?.toLowerCase().includes('lab') ||
         record.subjectName?.toLowerCase().includes('practical');
@@ -36,61 +35,59 @@ export function ENTSubjectCard({ record, onClick }: ENTSubjectCardProps) {
         <button
             onClick={onClick}
             className={`
-                relative w-full text-left p-5 rounded-2xl 
-                bg-[#12131A] hover:bg-[#1A1B24]
-                border border-white/10 hover:border-white/20
-                transition-all duration-300 active:scale-[0.98] group
-                flex flex-col gap-3
+                relative w-full text-left p-4 sm:p-5 rounded-xl 
+                bg-gradient-to-br ${slotStyle.bg} bg-[#0D0E12]
+                border border-white/[0.06] hover:border-white/15
+                transition-all duration-200 active:scale-[0.99] group
+                shadow-sm hover:shadow-md
             `}
         >
-            {/* Header: Subject Name + Code */}
-            <div className="flex flex-col gap-1">
-                <h3 className="text-base font-semibold text-white line-clamp-2 leading-tight group-hover:text-white/90">
-                    {record.subjectName}
-                </h3>
-                <span className="text-xs font-mono text-white/40">
-                    {record.subjectCode}
+            {/* Lab Badge - Floating */}
+            {isPractical && (
+                <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 text-[10px] font-bold uppercase tracking-wider border border-emerald-500/20">
+                    Lab
                 </span>
-            </div>
+            )}
 
-            {/* Slot Badge + Room */}
-            <div className="flex items-center gap-2 flex-wrap">
+            {/* Subject Name */}
+            <h3 className="text-[15px] sm:text-base font-semibold text-white/95 leading-snug mb-2 pr-12 line-clamp-2">
+                {record.subjectName}
+            </h3>
+
+            {/* Code */}
+            <p className="text-[11px] font-mono text-white/35 mb-3 tracking-wide">
+                {record.subjectCode}
+            </p>
+
+            {/* Slot + Room Row */}
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
                 {record.slot && (
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${slotColors.bg} ${slotColors.text} ${slotColors.border} border`}>
-                        Slot {record.slot}
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${slotStyle.accent} bg-white/5`}>
+                        {record.slot}
                     </span>
                 )}
                 {record.room && (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 text-white/60 text-xs">
-                        <MapPin size={12} />
+                    <span className="inline-flex items-center gap-1 text-[11px] text-white/50">
+                        <MapPin size={10} className="opacity-60" />
                         {record.room}
                     </span>
                 )}
             </div>
 
             {/* Footer: Faculty + Credits */}
-            <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/5">
-                {record.faculty && (
-                    <span className="flex items-center gap-1.5 text-xs text-white/50 truncate max-w-[60%]">
-                        <User size={12} className="flex-shrink-0" />
+            <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                {record.faculty ? (
+                    <span className="flex items-center gap-1.5 text-[11px] text-white/40 max-w-[65%]">
+                        <User size={10} className="flex-shrink-0 opacity-60" />
                         <span className="truncate">{record.faculty}</span>
                     </span>
-                )}
+                ) : <span />}
                 {record.credits !== undefined && record.credits > 0 && (
-                    <span className="flex items-center gap-1 text-xs text-white/40 font-medium">
-                        {record.credits} Credits
+                    <span className="text-[11px] text-white/35 font-medium">
+                        {record.credits} Cr
                     </span>
                 )}
             </div>
-
-            {/* Category indicator */}
-            {isPractical && (
-                <div className="absolute top-3 right-3">
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-semibold uppercase tracking-wide">
-                        Lab
-                    </span>
-                </div>
-            )}
         </button>
     );
 }
