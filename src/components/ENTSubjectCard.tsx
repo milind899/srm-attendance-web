@@ -35,11 +35,11 @@ export function ENTSubjectCard({ record, onClick }: ENTSubjectCardProps) {
         <button
             onClick={onClick}
             className={`
-                relative w-full text-left p-4 sm:p-5 rounded-xl 
+                relative w-full h-full text-left p-4 sm:p-5 rounded-xl 
                 bg-gradient-to-br ${slotStyle.bg} bg-[#0D0E12]
                 border border-white/[0.06] hover:border-white/15
                 transition-all duration-200 active:scale-[0.99] group
-                shadow-sm hover:shadow-md
+                shadow-sm hover:shadow-md flex flex-col
             `}
         >
             {/* Lab Badge - Floating */}
@@ -75,7 +75,7 @@ export function ENTSubjectCard({ record, onClick }: ENTSubjectCardProps) {
             </div>
 
             {/* Footer: Faculty + Credits */}
-            <div className="flex items-center justify-between pt-2 border-t border-white/5">
+            <div className="flex items-center justify-between pt-2 mt-auto border-t border-white/5">
                 {record.faculty ? (
                     <span className="flex items-center gap-1.5 text-[11px] text-white/40 max-w-[65%]">
                         <User size={10} className="flex-shrink-0 opacity-60" />

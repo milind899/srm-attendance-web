@@ -437,7 +437,7 @@ export default function Dashboard() {
             </nav>
 
             {/* Minimal Refresh Notice */}
-            <div className="fixed top-16 left-0 right-0 z-40 bg-background/80 border-b border-border/50 backdrop-blur-sm">
+            <div className="fixed top-16 left-0 right-0 z-30 bg-background/80 border-b border-border/50 backdrop-blur-sm">
                 <div className="max-w-7xl mx-auto px-4 py-1.5">
                     <p className="text-xs text-textMuted text-center">
                         To refresh data, <Link href="/login" className="text-primary hover:underline">login again</Link>
