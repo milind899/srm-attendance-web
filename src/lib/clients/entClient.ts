@@ -467,7 +467,7 @@ export class EntClient {
                     args: [...chromium.args, '--hide-scrollbars', '--disable-web-security'],
                     defaultViewport: { width: 1280, height: 800 },
                     executablePath: await chromium.executablePath(),
-                    headless: chromium.headless,
+                    headless: true,
                 });
             } else {
                 console.log('[ENT-PUP] Using Local config (puppeteer + bundled chrome)');
