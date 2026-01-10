@@ -210,6 +210,15 @@ export default function TimetablePage() {
                     </div>
                 )}
 
+                {/* Tip - Visible Controls */}
+                {masterSlots.length > 0 && (
+                    <div className="flex justify-center mb-2 md:hidden">
+                        <p className="text-xs text-gray-400 font-medium bg-white/5 py-1.5 px-4 rounded-full inline-flex items-center gap-2 border border-white/5 shadow-sm">
+                            <span className="text-sm">💡</span> Tap subject to mark optional
+                        </p>
+                    </div>
+                )}
+
                 {/* Timetable Grid */}
                 {masterSlots.length > 0 && (
                     <div className="overflow-x-auto pb-4 -mx-4 px-4">
@@ -222,7 +231,8 @@ export default function TimetablePage() {
                                 <h2 className="text-sm font-bold text-white">
                                     My Class Schedule • Batch {batch} • SRM Day Order
                                 </h2>
-                                <p className="text-xs text-gray-400 mt-1 font-medium bg-white/5 py-1 px-3 rounded-full inline-block">
+                                {/* Visible only in download/desktop */}
+                                <p className="text-[10px] text-gray-500 mt-1 hidden md:block">
                                     💡 Tip: Click on any subject to mark it as an optional hour
                                 </p>
                             </div>
