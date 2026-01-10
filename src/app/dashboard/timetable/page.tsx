@@ -207,35 +207,35 @@ export default function TimetablePage() {
                     <div className="overflow-x-auto pb-4 -mx-4 px-4">
                         <div
                             ref={tableRef}
-                            className="min-w-[1300px] bg-[#0f0f17] p-4 rounded-2xl border border-white/10"
+                            className="min-w-[1600px] bg-[#0f0f17] p-6 rounded-3xl border border-white/10 shadow-2xl shadow-black/50"
                         >
                             {/* Compact Title */}
-                            <div className="text-center mb-3 pb-2 border-b border-white/10">
-                                <h2 className="text-sm font-bold text-white">
+                            <div className="text-center mb-6 pb-4 border-b border-white/5">
+                                <h2 className="text-lg font-bold text-white tracking-wide">
                                     My Class Schedule • Batch {batch} • SRM Day Order
                                 </h2>
                             </div>
 
                             {/* Header Row */}
-                            <div className="grid grid-cols-[80px_repeat(10,1fr)] gap-1 mb-1">
-                                <div className="text-center text-xs font-semibold text-gray-400 py-2">Time</div>
+                            <div className="grid grid-cols-[100px_repeat(10,1fr)] gap-2 mb-2">
+                                <div className="flex items-center justify-center text-xs font-bold text-gray-400 uppercase tracking-wider">Time</div>
                                 {PERIODS.map((time, i) => (
                                     <div
                                         key={i}
-                                        className="text-center py-2 bg-gradient-to-b from-white/10 to-white/5 rounded-lg text-[11px] text-gray-200 font-semibold border border-white/5"
+                                        className="text-center py-3 bg-white/5 rounded-xl border border-white/5 backdrop-blur-sm"
                                     >
-                                        <div>{time.split('-')[0]}</div>
-                                        <div className="opacity-60 text-[10px]">{time.split('-')[1]}</div>
+                                        <div className="text-sm font-bold text-white mb-0.5">{time.split('-')[0]}</div>
+                                        <div className="text-xs text-gray-400 font-medium">{time.split('-')[1]}</div>
                                     </div>
                                 ))}
                             </div>
 
                             {/* Day Rows */}
                             {[1, 2, 3, 4, 5].map((dayOrder) => (
-                                <div key={dayOrder} className="grid grid-cols-[80px_repeat(10,1fr)] gap-1 mb-1">
+                                <div key={dayOrder} className="grid grid-cols-[100px_repeat(10,1fr)] gap-2 mb-2">
                                     {/* Day Header */}
-                                    <div className="flex items-center justify-center bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-lg text-sm font-bold text-white border border-primary/20">
-                                        {DAY_NAMES[dayOrder - 1]}
+                                    <div className="flex items-center justify-center bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-xl text-base font-bold text-white border border-white/10 tracking-wide">
+                                        Day {dayOrder}
                                     </div>
 
                                     {/* Period Cells */}
@@ -248,12 +248,12 @@ export default function TimetablePage() {
                                             <div
                                                 key={i}
                                                 className={`
-                                                    min-h-[85px] p-2 rounded-lg border flex flex-col justify-between 
-                                                    transition-all overflow-hidden
+                                                    min-h-[110px] p-3 rounded-xl border flex flex-col justify-between 
+                                                    transition-all duration-300 hover:scale-[1.02] hover:shadow-lg
                                                     ${isEmpty
                                                         ? 'bg-gray-900/40 border-gray-800/50'
                                                         : hasSubject
-                                                            ? getSlotColor(data.slotType, data.isLab || false)
+                                                            ? getSlotColor(data.slotType, data.isLab || false) + ' shadow-md'
                                                             : 'bg-gray-800/50 border-gray-700/50'
                                                     }
                                                 `}
@@ -262,19 +262,24 @@ export default function TimetablePage() {
                                                     <>
                                                         {hasSubject ? (
                                                             <>
-                                                                <div className="text-[11px] font-semibold leading-snug">
+                                                                <div className="text-xs font-bold leading-relaxed line-clamp-3">
                                                                     {data.subject!.subjectName}
                                                                 </div>
-                                                                {data.subject!.room && (
-                                                                    <div className="flex items-center gap-1 mt-auto text-[11px] font-bold opacity-90">
-                                                                        <MapPin size={10} />
-                                                                        {data.subject!.room}
+                                                                <div className="flex items-end justify-between mt-auto">
+                                                                    <div className="text-xs font-medium opacity-80 bg-black/20 px-2 py-0.5 rounded">
+                                                                        {data.slotType}
                                                                     </div>
-                                                                )}
+                                                                    {data.subject!.room && (
+                                                                        <div className="flex items-center gap-1.5 text-xs font-bold bg-white/10 px-2 py-1 rounded-md backdrop-blur-md">
+                                                                            <MapPin size={10} className="text-white" />
+                                                                            {data.subject!.room}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </>
                                                         ) : (
                                                             <div className="flex items-center justify-center h-full">
-                                                                <span className="text-sm font-bold opacity-25">
+                                                                <span className="text-lg font-bold opacity-10 font-mono tracking-widest">
                                                                     {data.slotType}
                                                                 </span>
                                                             </div>
