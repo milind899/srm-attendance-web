@@ -222,7 +222,7 @@ export default function TimetablePage() {
                                 <h2 className="text-sm font-bold text-white">
                                     My Class Schedule • Batch {batch} • SRM Day Order
                                 </h2>
-                                <p className="text-[10px] text-gray-500 mt-1">
+                                <p className="text-xs text-gray-400 mt-1 font-medium bg-white/5 py-1 px-3 rounded-full inline-block">
                                     💡 Tip: Click on any subject to mark it as an optional hour
                                 </p>
                             </div>
