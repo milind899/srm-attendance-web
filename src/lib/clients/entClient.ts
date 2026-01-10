@@ -41,7 +41,7 @@ export class EntClient {
             } catch (e) {
                 console.log('[ENT-PUP] Warning: Day 1 not found in master timetable');
             }
-            await new Promise(r => setTimeout(r, 2000));
+            await new Promise(r => setTimeout(r, 300));
 
             // Extract master timetable directly from browser DOM
             // Table structure from SRM: 12 periods (columns 1-12), 5 days (Day 1-5)

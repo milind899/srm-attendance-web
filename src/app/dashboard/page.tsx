@@ -452,40 +452,38 @@ export default function Dashboard() {
                         {/* ENT Layout - Subject focused */}
                         {department === 'ENT' ? (
                             <>
-                                {/* ENT Hero Section */}
-                                <div className="mb-8 opacity-0 animate-blur-in">
-                                    <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 border border-primary/20 bg-gradient-to-br from-primary/10 via-transparent to-purple-500/5">
-                                        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-                                            <div className="text-center sm:text-left">
-                                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-medium mb-3">
-                                                    <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                                                    Semester 6 • B.Tech
-                                                </div>
-                                                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2">
-                                                    Your Subjects
-                                                </h2>
-                                                <p className="text-white/60">
-                                                    {/* Deduplicate for count */}
-                                                    {(() => {
-                                                        const seen = new Set<string>();
-                                                        const unique = data.records.filter((r) => {
-                                                            const key = `${r.subjectCode}-${r.slot || ''}`;
-                                                            if (seen.has(key)) return false;
-                                                            seen.add(key);
-                                                            return true;
-                                                        });
-                                                        return `${unique.length} Subjects • ${unique.reduce((sum, r) => sum + (r.credits || 0), 0)} Credits`;
-                                                    })()}
-                                                </p>
+                                {/* ENT Hero Section - Compact */}
+                                <div className="mb-6 opacity-0 animate-blur-in">
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl border border-white/10 bg-white/[0.02]">
+                                        <div className="text-center sm:text-left">
+                                            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/15 text-primary text-[11px] font-medium mb-2">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                                Semester 6 • B.Tech
                                             </div>
-                                            <Link
-                                                href="/dashboard/timetable"
-                                                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-medium transition-all"
-                                            >
-                                                <CalendarCheck size={18} />
-                                                View Timetable
-                                            </Link>
+                                            <h2 className="text-2xl sm:text-3xl font-bold text-white">
+                                                Your Subjects
+                                            </h2>
+                                            <p className="text-sm text-white/50 mt-1">
+                                                {/* Deduplicate for count */}
+                                                {(() => {
+                                                    const seen = new Set<string>();
+                                                    const unique = data.records.filter((r) => {
+                                                        const key = `${r.subjectCode}-${r.slot || ''}`;
+                                                        if (seen.has(key)) return false;
+                                                        seen.add(key);
+                                                        return true;
+                                                    });
+                                                    return `${unique.length} Subjects • ${unique.reduce((sum, r) => sum + (r.credits || 0), 0)} Credits`;
+                                                })()}
+                                            </p>
                                         </div>
+                                        <Link
+                                            href="/dashboard/timetable"
+                                            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary text-sm font-medium transition-all"
+                                        >
+                                            <CalendarCheck size={16} />
+                                            View Timetable
+                                        </Link>
                                     </div>
                                 </div>
 
