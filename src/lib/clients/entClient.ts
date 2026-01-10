@@ -30,13 +30,13 @@ export class EntClient {
                 : 'https://academia.srmist.edu.in/#Page:Unified_Time_Table_2025_Batch_1';
 
             console.log(`[ENT-PUP] Navigating to Master Timetable: ${masterUrl}`);
-            await page.goto(masterUrl, { waitUntil: 'networkidle2', timeout: 45000 });
+            await page.goto(masterUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
 
             // Wait for table with Day rows to appear
             try {
                 await page.waitForFunction(
                     () => document.body.innerText.includes('Day 1') || document.body.innerText.includes('Day1'),
-                    { timeout: 15000 }
+                    { timeout: 8000 }
                 );
             } catch (e) {
                 console.log('[ENT-PUP] Warning: Day 1 not found in master timetable');
@@ -391,14 +391,14 @@ export class EntClient {
             : 'https://academia.srmist.edu.in/#Page:Unified_Time_Table_2025_Batch_1';
 
         try {
-            await page.goto(masterUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+            await page.goto(masterUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
 
             // Wait for Day 1 to appear
             await page.waitForFunction(
                 () => document.body.innerText.includes('Day 1') || document.body.innerText.includes('Day1'),
-                { timeout: 10000 }
+                { timeout: 6000 }
             );
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(r => setTimeout(r, 300));
 
             const slots = await page.evaluate(() => {
                 const result: Array<{ dayOrder: string, period: string, slotType: string }> = [];
