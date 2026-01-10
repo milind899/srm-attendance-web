@@ -465,7 +465,7 @@ export class EntClient {
 
                 browser = await puppeteerCore.launch({
                     args: [...chromium.args, '--hide-scrollbars', '--disable-web-security'],
-                    defaultViewport: chromium.defaultViewport,
+                    defaultViewport: { width: 1280, height: 800 },
                     executablePath: await chromium.executablePath(),
                     headless: chromium.headless,
                 });
