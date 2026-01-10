@@ -11,7 +11,7 @@ function LoginForm() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const deptParam = searchParams.get('dept');
-    const dept = deptParam || 'FSH';
+    const dept = deptParam || 'ENT';
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -132,7 +132,7 @@ function LoginForm() {
 
                 {/* Content */}
                 <div className="relative z-10">
-                    <Link href="/" className="inline-flex items-center gap-3 group">
+                    <Link href="/home" className="inline-flex items-center gap-3 group">
                         <div className="relative">
                             <div className="absolute -inset-4 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -185,23 +185,23 @@ function LoginForm() {
                     <div className="flex bg-[#0B0C0E]/50 backdrop-blur-md p-1 rounded-xl border border-border/50 shrink-0 shadow-inner">
                         <button
                             type="button"
-                            onClick={() => router.push('/login?dept=FSH')}
-                            className={`flex-1 py-2 sm:py-2.5 text-sm font-medium rounded-lg transition-all ${dept === 'FSH'
-                                ? 'bg-surfaceHighlight text-white shadow-lg shadow-black/20 border border-border/50'
-                                : 'text-textMuted hover:text-white'
-                                }`}
-                        >
-                            FSH Portal
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => router.push('/login?dept=ENT')}
+                            onClick={() => router.replace('/login?dept=ENT')}
                             className={`flex-1 py-2 sm:py-2.5 text-sm font-medium rounded-lg transition-all ${dept === 'ENT'
                                 ? 'bg-surfaceHighlight text-white shadow-lg shadow-black/20 border border-border/50'
                                 : 'text-textMuted hover:text-white'
                                 }`}
                         >
                             ENT Portal
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => router.replace('/login?dept=FSH')}
+                            className={`flex-1 py-2 sm:py-2.5 text-sm font-medium rounded-lg transition-all ${dept === 'FSH'
+                                ? 'bg-surfaceHighlight text-white shadow-lg shadow-black/20 border border-border/50'
+                                : 'text-textMuted hover:text-white'
+                                }`}
+                        >
+                            FSH Portal
                         </button>
                     </div>
 
@@ -304,7 +304,7 @@ function LoginForm() {
                             <ShieldCheck size={12} className="text-green-500" />
                             <span>No passwords stored • Data stays in your browser</span>
                         </div>
-                        <Link href="/" className="inline-block text-xs text-textMuted hover:text-white transition-colors">
+                        <Link href="/home" className="inline-block text-xs text-textMuted hover:text-white transition-colors">
                             Back to Home
                         </Link>
                     </div>
