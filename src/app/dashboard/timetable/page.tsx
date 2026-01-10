@@ -207,7 +207,7 @@ export default function TimetablePage() {
                     <div className="overflow-x-auto pb-4 -mx-4 px-4">
                         <div
                             ref={tableRef}
-                            className="min-w-[900px] bg-[#0f0f17] p-4 rounded-2xl border border-white/10"
+                            className="min-w-[1300px] bg-[#0f0f17] p-4 rounded-2xl border border-white/10"
                         >
                             {/* Compact Title */}
                             <div className="text-center mb-3 pb-2 border-b border-white/10">
@@ -217,7 +217,7 @@ export default function TimetablePage() {
                             </div>
 
                             {/* Header Row */}
-                            <div className="grid grid-cols-[65px_repeat(10,1fr)] gap-1 mb-1">
+                            <div className="grid grid-cols-[80px_repeat(10,1fr)] gap-1 mb-1">
                                 <div className="text-center text-xs font-semibold text-gray-400 py-2">Time</div>
                                 {PERIODS.map((time, i) => (
                                     <div
@@ -232,7 +232,7 @@ export default function TimetablePage() {
 
                             {/* Day Rows */}
                             {[1, 2, 3, 4, 5].map((dayOrder) => (
-                                <div key={dayOrder} className="grid grid-cols-[65px_repeat(10,1fr)] gap-1 mb-1">
+                                <div key={dayOrder} className="grid grid-cols-[80px_repeat(10,1fr)] gap-1 mb-1">
                                     {/* Day Header */}
                                     <div className="flex items-center justify-center bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-lg text-sm font-bold text-white border border-primary/20">
                                         {DAY_NAMES[dayOrder - 1]}
@@ -248,7 +248,7 @@ export default function TimetablePage() {
                                             <div
                                                 key={i}
                                                 className={`
-                                                    min-h-[100px] p-2 rounded-lg border flex flex-col justify-between 
+                                                    min-h-[85px] p-2 rounded-lg border flex flex-col justify-between 
                                                     transition-all overflow-hidden
                                                     ${isEmpty
                                                         ? 'bg-gray-900/40 border-gray-800/50'
