@@ -218,12 +218,17 @@ export class EntClient {
 
     async loginAndFetch(username: string, password: string): Promise<any> {
         return this.runPuppeteerAction(username, password, async (page, browser) => {
-            // Speculatively fetch master timetables for common batches in parallel
-            // This runs in background tabs while main tab fetches enrolled slots
+            // Parallel scraping MOVED to inside interactWithPage/actionCallback to ensure login priority
+            // const batch1Promise = this.fetchMasterSlotsInNewTab(browser, '1');
+            // const batch2Promise = this.fetchMasterSlotsInNewTab(browser, '2');
+
+            console.log('[ENT-PUP] Navigating to My Time Table page...');
+
+            // Trigger parallel scraping NOW that we are authenticated and navigating
+            // We pass the browser instance to let these run in background
             const batch1Promise = this.fetchMasterSlotsInNewTab(browser, '1');
             const batch2Promise = this.fetchMasterSlotsInNewTab(browser, '2');
 
-            console.log('[ENT-PUP] Navigating to My Time Table page...');
             await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'domcontentloaded', timeout: 45000 });
 
             console.log('[ENT-PUP] Waiting for table to load...');
@@ -611,7 +616,7 @@ export class EntClient {
                 if (nextBtn) {
                     console.log('[ENT-PUP] Clicking Next button...');
                     await nextBtn.click();
-                    await target.waitForSelector('input[name="PASSWORD"]', { visible: true, timeout: 5000 });
+                    await target.waitForSelector('input[name="PASSWORD"]', { visible: true, timeout: 15000 });
                 }
 
                 await target.type('input[name="PASSWORD"]', password);
