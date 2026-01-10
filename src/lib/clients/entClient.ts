@@ -450,13 +450,35 @@ export class EntClient {
         let browser = null;
         try {
             console.log('[ENT-PUP] Launching browser...');
-            const puppeteer = await import('puppeteer');
-            browser = await puppeteer.launch({
-                headless: true, // Hidden for production experience
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
-            });
+            let page: any;
 
-            const page = await browser.newPage();
+            // Check if running on Vercel/Production
+            const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+
+            if (isProduction) {
+                console.log('[ENT-PUP] Using Vercel/Production config (puppeteer-core + chromium)');
+                const chromium = await import('@sparticuz/chromium').then(mod => mod.default);
+                const puppeteerCore = await import('puppeteer-core').then(mod => mod.default);
+
+                // Opt for graphics acceleration disabling for speed/stability
+                chromium.setGraphicsMode = false;
+
+                browser = await puppeteerCore.launch({
+                    args: [...chromium.args, '--hide-scrollbars', '--disable-web-security'],
+                    defaultViewport: chromium.defaultViewport,
+                    executablePath: await chromium.executablePath(),
+                    headless: chromium.headless,
+                });
+            } else {
+                console.log('[ENT-PUP] Using Local config (puppeteer + bundled chrome)');
+                const puppeteer = await import('puppeteer').then(mod => mod.default);
+                browser = await puppeteer.launch({
+                    headless: true, // Hidden for production experience
+                    args: ['--no-sandbox', '--disable-setuid-sandbox']
+                });
+            }
+
+            page = await browser.newPage();
             // Set viewport to desktop
             await page.setViewport({ width: 1280, height: 800 });
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
