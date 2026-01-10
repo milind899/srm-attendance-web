@@ -5,6 +5,7 @@ import { AttendanceRecord, TimetableResult, TimetableData, EnrolledSlot, TimeTab
 export class EntClient {
     private client: AxiosInstance;
     private baseUrl = 'https://academia.srmist.edu.in';
+    private static masterTimetableCache: Record<string, any[]> = {};
 
     constructor() {
         this.client = axios.create({
@@ -216,9 +217,14 @@ export class EntClient {
     }
 
     async loginAndFetch(username: string, password: string): Promise<any> {
-        return this.runPuppeteerAction(username, password, async (page) => {
+        return this.runPuppeteerAction(username, password, async (page, browser) => {
+            // Speculatively fetch master timetables for common batches in parallel
+            // This runs in background tabs while main tab fetches enrolled slots
+            const batch1Promise = this.fetchMasterSlotsInNewTab(browser, '1');
+            const batch2Promise = this.fetchMasterSlotsInNewTab(browser, '2');
+
             console.log('[ENT-PUP] Navigating to My Time Table page...');
-            await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'domcontentloaded', timeout: 15000 });
+            await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'domcontentloaded', timeout: 45000 });
 
             console.log('[ENT-PUP] Waiting for table to load...');
             try {
@@ -366,7 +372,19 @@ export class EntClient {
 
             // Fetch master timetable only for the detected batch
             console.log(`[ENT-PUP] Fetching master timetable for Batch ${batchInfo}...`);
-            const masterSlots = await this.fetchMasterSlots(page, batchInfo);
+
+            let masterSlots: any[] = [];
+            if (batchInfo === '1') {
+                masterSlots = await batch1Promise;
+            } else if (batchInfo === '2') {
+                masterSlots = await batch2Promise;
+            } else {
+                // Fallback for weird batches
+                masterSlots = await this.fetchMasterSlots(page, batchInfo);
+            }
+
+            // Ensure we handle the other promise rejection if any (prevent unhandled rejection)
+            Promise.allSettled([batch1Promise, batch2Promise]);
 
             return {
                 success: true,
@@ -384,8 +402,45 @@ export class EntClient {
         });
     }
 
+    // Helper to fetch master slots in a new tab (for parallel execution)
+    private async fetchMasterSlotsInNewTab(browser: any, batch: string): Promise<Array<{ dayOrder: string; period: string; slotType: string }>> {
+        if (EntClient.masterTimetableCache[batch]) {
+            return EntClient.masterTimetableCache[batch];
+        }
+
+        try {
+            const page = await browser.newPage();
+
+            // Optimization: Block resources
+            await page.setRequestInterception(true);
+            page.on('request', (req: any) => {
+                const resourceType = req.resourceType();
+                if (['image', 'font', 'media'].includes(resourceType)) {
+                    req.abort();
+                } else {
+                    req.continue();
+                }
+            });
+
+            console.log(`[ENT-PUP] Speculative Fetch: Batch ${batch} (New Tab)`);
+            const slots = await this.fetchMasterSlots(page, batch);
+            await page.close();
+            return slots;
+        } catch (e) {
+            console.log(`[ENT-PUP] Speculative Fetch Failed for Batch ${batch}`);
+            return [];
+        }
+    }
+
     // Helper to fetch master slots for a specific batch
     private async fetchMasterSlots(page: any, batch: string): Promise<Array<{ dayOrder: string; period: string; slotType: string }>> {
+        if (EntClient.masterTimetableCache[batch]) {
+            console.log(`[ENT-PUP] Cache HIT for Batch ${batch}. Using in-memory master timetable.`);
+            return EntClient.masterTimetableCache[batch];
+        }
+
+        console.log(`[ENT-PUP] Cache MISS for Batch ${batch}. Fetching from server...`);
+
         const masterUrl = batch === '2'
             ? 'https://academia.srmist.edu.in/#Page:Unified_Time_Table_2025_batch_2'
             : 'https://academia.srmist.edu.in/#Page:Unified_Time_Table_2025_Batch_1';
@@ -439,6 +494,9 @@ export class EntClient {
             });
 
             console.log(`[ENT-PUP] Batch ${batch} master slots: ${slots.length}`);
+            if (slots.length > 0) {
+                EntClient.masterTimetableCache[batch] = slots;
+            }
             return slots;
         } catch (e: any) {
             console.log(`[ENT-PUP] Error fetching batch ${batch} master timetable:`, e.message);
@@ -446,7 +504,7 @@ export class EntClient {
         }
     }
 
-    private async runPuppeteerAction(username: string, password: string, actionCallback: (page: any) => Promise<any>): Promise<any> {
+    private async runPuppeteerAction(username: string, password: string, actionCallback: (page: any, browser: any) => Promise<any>): Promise<any> {
         let browser = null;
         try {
             console.log('[ENT-PUP] Launching browser...');
@@ -586,7 +644,7 @@ export class EntClient {
             }
 
             // Run the specific action (Fetch timtable or Attendance)
-            return await actionCallback(page);
+            return await actionCallback(page, browser);
 
         } catch (error: any) {
             console.error('[ENT-PUP] Error:', error.message);
