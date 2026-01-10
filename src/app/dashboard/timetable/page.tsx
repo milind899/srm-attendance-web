@@ -232,7 +232,7 @@ export default function TimetablePage() {
                                     My Class Schedule • Batch {batch} • SRM Day Order
                                 </h2>
                                 {/* Visible only in download/desktop */}
-                                <p className="text-[10px] text-gray-500 mt-1 hidden md:block">
+                                <p className="text-[10px] text-gray-500 mt-1">
                                     💡 Tip: Click on any subject to mark it as an optional hour
                                 </p>
                             </div>
