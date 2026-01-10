@@ -465,7 +465,17 @@ export default function Dashboard() {
                                                     Your Subjects
                                                 </h2>
                                                 <p className="text-white/60">
-                                                    {data.records.length} Subjects • {data.records.reduce((sum, r) => sum + (r.credits || 0), 0)} Credits
+                                                    {/* Deduplicate for count */}
+                                                    {(() => {
+                                                        const seen = new Set<string>();
+                                                        const unique = data.records.filter((r) => {
+                                                            const key = `${r.subjectCode}-${r.slot || ''}`;
+                                                            if (seen.has(key)) return false;
+                                                            seen.add(key);
+                                                            return true;
+                                                        });
+                                                        return `${unique.length} Subjects • ${unique.reduce((sum, r) => sum + (r.credits || 0), 0)} Credits`;
+                                                    })()}
                                                 </p>
                                             </div>
                                             <Link
@@ -482,13 +492,22 @@ export default function Dashboard() {
                                 {/* ENT Subject Cards Grid */}
                                 <div className="opacity-0 animate-blur-in delay-200 mb-24">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {data.records.map((record, i) => (
-                                            <ENTSubjectCard
-                                                key={`${record.subjectCode}-${i}`}
-                                                record={record}
-                                                onClick={() => setSelectedSubject(record)}
-                                            />
-                                        ))}
+                                        {/* Deduplicate records by subjectCode + slot */}
+                                        {(() => {
+                                            const seen = new Set<string>();
+                                            return data.records.filter((r) => {
+                                                const key = `${r.subjectCode}-${r.slot || ''}`;
+                                                if (seen.has(key)) return false;
+                                                seen.add(key);
+                                                return true;
+                                            }).map((record, i) => (
+                                                <ENTSubjectCard
+                                                    key={`${record.subjectCode}-${record.slot}-${i}`}
+                                                    record={record}
+                                                    onClick={() => setSelectedSubject(record)}
+                                                />
+                                            ));
+                                        })()}
                                     </div>
                                 </div>
                             </>

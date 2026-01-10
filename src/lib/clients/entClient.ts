@@ -44,30 +44,56 @@ export class EntClient {
             await new Promise(r => setTimeout(r, 2000));
 
             // Extract master timetable directly from browser DOM
+            // Table structure from SRM: 12 periods (columns 1-12), 5 days (Day 1-5)
             const masterSlots = await page.evaluate(() => {
                 const slots: Array<{ dayOrder: string, period: string, slotType: string }> = [];
                 const tables = document.querySelectorAll('table');
 
-                tables.forEach(table => {
-                    const rows = table.querySelectorAll('tr');
-                    rows.forEach(row => {
-                        const cells = row.querySelectorAll('td');
-                        if (cells.length >= 2) {
-                            const firstCellText = cells[0]?.textContent?.trim() || '';
-                            const dayMatch = firstCellText.match(/Day\s*(\d+)/i);
+                console.log('[BROWSER] Found', tables.length, 'tables for master timetable');
 
-                            if (dayMatch) {
-                                const dayOrder = dayMatch[1];
-                                for (let c = 1; c < cells.length && c <= 12; c++) {
-                                    const slotType = cells[c]?.textContent?.trim() || '';
-                                    if (slotType && slotType !== '-' && slotType.length < 10) {
-                                        slots.push({ dayOrder, period: c.toString(), slotType });
-                                    }
+                tables.forEach((table, tableIdx) => {
+                    const rows = table.querySelectorAll('tr');
+                    console.log(`[BROWSER] Table ${tableIdx}: ${rows.length} rows`);
+
+                    rows.forEach((row, rowIdx) => {
+                        // Get all cells (both td and th)
+                        const cells = row.querySelectorAll('td, th');
+                        if (cells.length < 2) return;
+
+                        // First cell should contain "Day X"
+                        const firstCellText = cells[0]?.textContent?.trim() || '';
+                        const dayMatch = firstCellText.match(/Day\s*(\d+)/i);
+
+                        if (dayMatch) {
+                            const dayOrder = dayMatch[1];
+                            console.log(`[BROWSER] Found Day ${dayOrder} row with ${cells.length} cells`);
+
+                            // Iterate through period columns (1-12)
+                            for (let c = 1; c < cells.length && c <= 12; c++) {
+                                const cellContent = cells[c]?.textContent?.trim() || '';
+
+                                // Clean the slot type - handle "A/X", "P11/X" patterns
+                                let slotType = cellContent.split('/')[0].trim();
+
+                                // Only add valid slot types (A-G for theory, P/L + numbers for labs)
+                                const invalidWords = ['FROM', 'TO', 'HOUR', 'TIME', 'DAY', 'ORDER'];
+                                const isValidSlot = slotType &&
+                                    slotType !== '-' &&
+                                    slotType.length <= 4 &&
+                                    !/^\d+$/.test(slotType) &&
+                                    !invalidWords.includes(slotType.toUpperCase()) &&
+                                    /^[A-G]\d*$|^P\d+$|^L\d+$/.test(slotType);
+
+                                if (isValidSlot) {
+                                    slots.push({ dayOrder, period: c.toString(), slotType });
+                                    console.log(`[BROWSER] Day ${dayOrder}, Period ${c}: ${slotType}`);
                                 }
                             }
                         }
                     });
                 });
+
+                console.log('[BROWSER] Total master slots extracted:', slots.length);
                 return slots;
             });
 
@@ -314,15 +340,110 @@ export class EntClient {
                 room: s.room
             }));
 
+            // Extract batch info from page (look for "Combo / Batch: X/Y" pattern)
+            // The batch is the SECOND number after the slash (e.g., "1/2" means Batch 2)
+            const batchInfo = await page.evaluate(() => {
+                const bodyText = document.body.innerText;
+                // Look for "Combo / Batch: 1/2" pattern - capture the number after slash
+                const slashMatch = bodyText.match(/Combo\s*\/?\s*Batch\s*:\s*\d+\/(\d+)/i);
+                if (slashMatch) {
+                    return slashMatch[1]; // Return the batch after slash
+                }
+                // Fallback: Look for single number pattern like "Combo / Batch: 2"
+                const singleMatch = bodyText.match(/Combo\s*\/?\s*Batch\s*:\s*(\d+)(?!\/)/i);
+                if (singleMatch) {
+                    return singleMatch[1];
+                }
+                // Also try "B2 Section" or "Batch 2" patterns
+                const sectionMatch = bodyText.match(/B(\d+)\s*Section/i);
+                if (sectionMatch) {
+                    return sectionMatch[1];
+                }
+                return '1'; // Default
+            });
+
+            console.log(`[ENT-PUP] Detected batch: ${batchInfo}`);
+
+            // Fetch master timetable only for the detected batch
+            console.log(`[ENT-PUP] Fetching master timetable for Batch ${batchInfo}...`);
+            const masterSlots = await this.fetchMasterSlots(page, batchInfo);
+
             return {
                 success: true,
                 data: {
-                    studentName: 'Student', // Could extract from page header if needed
+                    studentName: 'Student',
                     registrationNumber: username,
-                    records
+                    records,
+                    // Include the detected batch and its master timetable
+                    userBatch: batchInfo,
+                    masterTimetable: {
+                        [`batch${batchInfo}`]: masterSlots
+                    }
                 }
             };
         });
+    }
+
+    // Helper to fetch master slots for a specific batch
+    private async fetchMasterSlots(page: any, batch: string): Promise<Array<{ dayOrder: string; period: string; slotType: string }>> {
+        const masterUrl = batch === '2'
+            ? 'https://academia.srmist.edu.in/#Page:Unified_Time_Table_2025_batch_2'
+            : 'https://academia.srmist.edu.in/#Page:Unified_Time_Table_2025_Batch_1';
+
+        try {
+            await page.goto(masterUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+
+            // Wait for Day 1 to appear
+            await page.waitForFunction(
+                () => document.body.innerText.includes('Day 1') || document.body.innerText.includes('Day1'),
+                { timeout: 10000 }
+            );
+            await new Promise(r => setTimeout(r, 1500));
+
+            const slots = await page.evaluate(() => {
+                const result: Array<{ dayOrder: string, period: string, slotType: string }> = [];
+                const tables = document.querySelectorAll('table');
+
+                tables.forEach(table => {
+                    const rows = table.querySelectorAll('tr');
+                    rows.forEach(row => {
+                        const cells = row.querySelectorAll('td, th');
+                        if (cells.length < 2) return;
+
+                        const firstCellText = cells[0]?.textContent?.trim() || '';
+                        const dayMatch = firstCellText.match(/Day\s*(\d+)/i);
+
+                        if (dayMatch) {
+                            const dayOrder = dayMatch[1];
+                            for (let c = 1; c < cells.length && c <= 12; c++) {
+                                const cellContent = cells[c]?.textContent?.trim() || '';
+                                let slotType = cellContent.split('/')[0].trim();
+
+                                // Filter out non-slot words and validate slot format
+                                const invalidWords = ['FROM', 'TO', 'HOUR', 'TIME', 'DAY', 'ORDER'];
+                                const isValidSlot = slotType &&
+                                    slotType !== '-' &&
+                                    slotType.length <= 4 &&
+                                    !/^\d+$/.test(slotType) &&
+                                    !invalidWords.includes(slotType.toUpperCase()) &&
+                                    /^[A-Z]\d*$|^P\d+$|^L\d+$/.test(slotType); // Valid: A, B, P11, L51, etc.
+
+                                if (isValidSlot) {
+                                    result.push({ dayOrder, period: c.toString(), slotType });
+                                }
+                            }
+                        }
+                    });
+                });
+                return result;
+            });
+
+            console.log(`[ENT-PUP] Batch ${batch} master slots: ${slots.length}`);
+            return slots;
+        } catch (e: any) {
+            console.log(`[ENT-PUP] Error fetching batch ${batch} master timetable:`, e.message);
+            return [];
+        }
     }
 
     private async runPuppeteerAction(username: string, password: string, actionCallback: (page: any) => Promise<any>): Promise<any> {

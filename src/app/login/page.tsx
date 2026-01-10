@@ -83,6 +83,18 @@ function LoginForm() {
                     localStorage.setItem('internalMarksDepartment', dept);
                 }
 
+                // Save master timetable for ENT (fetched during login)
+                // Now only saves for the user's detected batch
+                if (data.data?.userBatch && data.data?.masterTimetable) {
+                    const userBatch = data.data.userBatch;
+                    const masterSlots = data.data.masterTimetable[`batch${userBatch}`];
+                    if (masterSlots?.length > 0) {
+                        localStorage.setItem(`timetable_batch_${userBatch}`, JSON.stringify({ masterSlots }));
+                    }
+                    // Save user's batch for timetable page
+                    localStorage.setItem('userBatch', userBatch);
+                }
+
                 const profileData = {
                     studentName: data.data?.studentName || '',
                     studentId: username,
