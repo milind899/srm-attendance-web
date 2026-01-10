@@ -474,17 +474,29 @@ export class EntClient {
                 const puppeteer = await import('puppeteer').then(mod => mod.default);
                 browser = await puppeteer.launch({
                     headless: true, // Hidden for production experience
-                    args: ['--no-sandbox', '--disable-setuid-sandbox']
+                    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
                 });
             }
 
             page = await browser.newPage();
+
+            // Optimization: Block images, fonts, and media to save bandwidth and speed up load
+            await page.setRequestInterception(true);
+            page.on('request', (req: any) => {
+                const resourceType = req.resourceType();
+                if (['image', 'font', 'media'].includes(resourceType)) {
+                    req.abort();
+                } else {
+                    req.continue();
+                }
+            });
+
             // Set viewport to desktop
             await page.setViewport({ width: 1280, height: 800 });
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
             console.log('[ENT-PUP] Navigating to login page...');
-            await page.goto('https://academia.srmist.edu.in/', { waitUntil: 'domcontentloaded', timeout: 15000 });
+            await page.goto('https://academia.srmist.edu.in/', { waitUntil: 'domcontentloaded', timeout: 45000 });
 
             console.log('[ENT-PUP] Checking for login selectors...');
             // Wait for Zoho login elements. Usually an iframe or redirect happens.
@@ -551,7 +563,7 @@ export class EntClient {
                 await page.keyboard.press('Enter');
 
                 console.log('[ENT-PUP] Waiting for navigation after login...');
-                await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 });
+                await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 });
             } else {
                 console.log('[ENT-PUP] Login input not found in any frame.');
                 // Check for "Sign In" button on main page if we are still on academia
