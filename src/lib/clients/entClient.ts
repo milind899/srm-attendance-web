@@ -10,7 +10,7 @@ export class EntClient {
     constructor() {
         this.client = axios.create({
             baseURL: this.baseUrl,
-            timeout: 30000,
+            timeout: 45000,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -31,7 +31,7 @@ export class EntClient {
                 : 'https://academia.srmist.edu.in/#Page:Unified_Time_Table_2025_Batch_1';
 
             console.log(`[ENT-PUP] Navigating to Master Timetable: ${masterUrl}`);
-            await page.goto(masterUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await page.goto(masterUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
 
             // Wait for table with Day rows to appear
             try {
@@ -102,7 +102,7 @@ export class EntClient {
 
             // 2. Fetch Enrolled Slots 
             console.log('[ENT-PUP] Navigating to My Time Table Attendance...');
-            await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'networkidle2', timeout: 30000 });
+            await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'networkidle2', timeout: 45000 });
 
             // Wait for course codes to appear (pattern like 21CSC303J)
             try {
@@ -226,14 +226,14 @@ export class EntClient {
             // const batch1Promise = this.fetchMasterSlotsInNewTab(browser, '1');
             // const batch2Promise = this.fetchMasterSlotsInNewTab(browser, '2');
 
-            await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'domcontentloaded', timeout: 45000 });
 
             console.log('[ENT-PUP] Waiting for table to load...');
             try {
                 // Wait for course codes to appear (pattern like 21CSC303J)
                 await page.waitForFunction(
                     () => /\d{2}[A-Z]{2,4}\d{3}[A-Z]?/.test(document.body.innerText),
-                    { timeout: 8000 }
+                    { timeout: 15000 } // Keep this shorter as we expect content if page loaded
                 );
                 await new Promise(r => setTimeout(r, 200));
             } catch (e) {
@@ -384,7 +384,7 @@ export class EntClient {
                 : 'https://academia.srmist.edu.in/#Page:Unified_Time_Table_2025_Batch_1';
 
             console.log(`[ENT-PUP] Navigating to: ${masterUrl}`);
-            await page.goto(masterUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+            await page.goto(masterUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
             // Wait for the timetable to load
             try {
@@ -494,12 +494,12 @@ export class EntClient {
             : 'https://academia.srmist.edu.in/#Page:Unified_Time_Table_2025_Batch_1';
 
         try {
-            await page.goto(masterUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+            await page.goto(masterUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
             // Wait for Day 1 to appear
             await page.waitForFunction(
                 () => document.body.innerText.includes('Day 1') || document.body.innerText.includes('Day1'),
-                { timeout: 6000 }
+                { timeout: 8000 }
             );
             await new Promise(r => setTimeout(r, 300));
 
@@ -627,12 +627,13 @@ export class EntClient {
 
             if (!sessionRestored) {
                 console.log('[ENT-PUP] Navigating to login page...');
-                await page.goto('https://academia.srmist.edu.in/', { waitUntil: 'domcontentloaded', timeout: 25000 });
+                // Increased timeout for initial login page load
+                await page.goto('https://academia.srmist.edu.in/', { waitUntil: 'domcontentloaded', timeout: 60000 });
 
                 console.log('[ENT-PUP] Checking for login selectors...');
                 // Wait for redirect to settle
                 try {
-                    await page.waitForNavigation({ timeout: 5000, waitUntil: 'domcontentloaded' });
+                    await page.waitForNavigation({ timeout: 10000, waitUntil: 'domcontentloaded' });
                 } catch (e) { }
 
                 console.log(`[ENT-PUP] Current URL after initial nav: ${page.url()}`);
