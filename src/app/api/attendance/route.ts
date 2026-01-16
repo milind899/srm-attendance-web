@@ -38,7 +38,9 @@ export async function POST(request: Request) {
             const client = new EntClient();
 
             if (action === 'timetable') {
-                result = await client.getTimetable(username, password, batch || '1');
+                // Pass cookies if available for session reuse
+                const cookieArray = cookies ? JSON.parse(cookies) : [];
+                result = await client.getTimetable(username, password, batch || '1', cookieArray);
             } else {
                 result = await client.loginAndFetch(username, password);
             }

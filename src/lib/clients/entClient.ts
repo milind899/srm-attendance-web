@@ -22,7 +22,7 @@ export class EntClient {
 
 
 
-    async getTimetable(username: string, password: string, batch: string): Promise<TimetableResult> {
+    async getTimetable(username: string, password: string, batch: string, cookies: any[] = []): Promise<TimetableResult> {
         return this.runPuppeteerAction(username, password, async (page) => {
 
             // 1. Fetch Master Timetable using page.evaluate()
@@ -31,7 +31,7 @@ export class EntClient {
                 : 'https://academia.srmist.edu.in/#Page:Unified_Time_Table_2025_Batch_1';
 
             console.log(`[ENT-PUP] Navigating to Master Timetable: ${masterUrl}`);
-            await page.goto(masterUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+            await page.goto(masterUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
             // Wait for table with Day rows to appear
             try {
@@ -102,7 +102,7 @@ export class EntClient {
 
             // 2. Fetch Enrolled Slots 
             console.log('[ENT-PUP] Navigating to My Time Table Attendance...');
-            await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'networkidle2', timeout: 45000 });
+            await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'networkidle2', timeout: 30000 });
 
             // Wait for course codes to appear (pattern like 21CSC303J)
             try {
@@ -218,18 +218,15 @@ export class EntClient {
 
     async loginAndFetch(username: string, password: string): Promise<any> {
         return this.runPuppeteerAction(username, password, async (page, browser) => {
-            // Parallel scraping MOVED to inside interactWithPage/actionCallback to ensure login priority
-            // const batch1Promise = this.fetchMasterSlotsInNewTab(browser, '1');
-            // const batch2Promise = this.fetchMasterSlotsInNewTab(browser, '2');
+            // PHASE 1: LOGGING IN & SCRAPING SUBJECTS ONLY (NO MASTERSLOTS)
 
             console.log('[ENT-PUP] Navigating to My Time Table page...');
 
-            // Trigger parallel scraping NOW that we are authenticated and navigating
-            // We pass the browser instance to let these run in background
-            const batch1Promise = this.fetchMasterSlotsInNewTab(browser, '1');
-            const batch2Promise = this.fetchMasterSlotsInNewTab(browser, '2');
+            // DISABLED: Parallel scraping (We will fetch this in Phase 2 via background request)
+            // const batch1Promise = this.fetchMasterSlotsInNewTab(browser, '1');
+            // const batch2Promise = this.fetchMasterSlotsInNewTab(browser, '2');
 
-            await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'domcontentloaded', timeout: 45000 });
+            await page.goto('https://academia.srmist.edu.in/#My_Time_Table_Attendance', { waitUntil: 'domcontentloaded', timeout: 30000 });
 
             console.log('[ENT-PUP] Waiting for table to load...');
             try {
@@ -351,45 +348,94 @@ export class EntClient {
                 room: s.room
             }));
 
-            // Extract batch info from page (look for "Combo / Batch: X/Y" pattern)
-            // The batch is the SECOND number after the slash (e.g., "1/2" means Batch 2)
+            // Extract batch info from page
+            // Look for "Batch: X" pattern (can be "Combo / Batch: X" or just "Batch: X")
             const batchInfo = await page.evaluate(() => {
                 const bodyText = document.body.innerText;
-                // Look for "Combo / Batch: 1/2" pattern - capture the number after slash
+
+                // Pattern 1: "Combo / Batch: 1/2" - extract the number after slash
                 const slashMatch = bodyText.match(/Combo\s*\/?\s*Batch\s*:\s*\d+\/(\d+)/i);
                 if (slashMatch) {
-                    return slashMatch[1]; // Return the batch after slash
+                    return slashMatch[1];
                 }
-                // Fallback: Look for single number pattern like "Combo / Batch: 2"
-                const singleMatch = bodyText.match(/Combo\s*\/?\s*Batch\s*:\s*(\d+)(?!\/)/i);
-                if (singleMatch) {
-                    return singleMatch[1];
+
+                // Pattern 2: Just "Batch: X" (no Combo prefix, no slash)
+                const batchMatch = bodyText.match(/Batch\s*:\s*(\d+)/i);
+                if (batchMatch) {
+                    return batchMatch[1];
                 }
-                // Also try "B2 Section" or "Batch 2" patterns
-                const sectionMatch = bodyText.match(/B(\d+)\s*Section/i);
+
+                // Pattern 3: "(A1 Section)" or "(B2 Section)" - A=Batch1, B=Batch2
+                const sectionMatch = bodyText.match(/\(([AB])(\d+)\s*Section\)/i);
                 if (sectionMatch) {
-                    return sectionMatch[1];
+                    // A = Batch 1, B = Batch 2
+                    return sectionMatch[1].toUpperCase() === 'A' ? '1' : '2';
                 }
-                return '1'; // Default
+
+                return '1'; // Default to batch 1
             });
 
             console.log(`[ENT-PUP] Detected batch: ${batchInfo}`);
 
-            // Fetch master timetable only for the detected batch
-            console.log(`[ENT-PUP] Fetching master timetable for Batch ${batchInfo}...`);
+            // Fetch master timetable for the detected batch
+            console.log(`[ENT-PUP] Fetching master timetable for batch ${batchInfo}...`);
+            const masterUrl = batchInfo === '2'
+                ? 'https://academia.srmist.edu.in/#Page:Unified_Time_Table_2025_batch_2'
+                : 'https://academia.srmist.edu.in/#Page:Unified_Time_Table_2025_Batch_1';
 
-            let masterSlots: any[] = [];
-            if (batchInfo === '1') {
-                masterSlots = await batch1Promise;
-            } else if (batchInfo === '2') {
-                masterSlots = await batch2Promise;
-            } else {
-                // Fallback for weird batches
-                masterSlots = await this.fetchMasterSlots(page, batchInfo);
+            console.log(`[ENT-PUP] Navigating to: ${masterUrl}`);
+            await page.goto(masterUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+
+            // Wait for the timetable to load
+            try {
+                await page.waitForFunction(
+                    () => document.body.innerText.includes('Day 1') || document.body.innerText.includes('Day1'),
+                    { timeout: 8000 }
+                );
+            } catch (e) {
+                console.log('[ENT-PUP] Warning: Day 1 not found in master timetable');
             }
+            await new Promise(r => setTimeout(r, 500));
 
-            // Ensure we handle the other promise rejection if any (prevent unhandled rejection)
-            Promise.allSettled([batch1Promise, batch2Promise]);
+            // Extract master slots
+            const masterSlots = await page.evaluate(() => {
+                const slots: Array<{ dayOrder: string, period: string, slotType: string }> = [];
+                const tables = document.querySelectorAll('table');
+
+                tables.forEach(table => {
+                    const rows = table.querySelectorAll('tr');
+                    rows.forEach(row => {
+                        const cells = row.querySelectorAll('td, th');
+                        if (cells.length < 2) return;
+
+                        const firstCellText = cells[0]?.textContent?.trim() || '';
+                        const dayMatch = firstCellText.match(/Day\s*(\d+)/i);
+
+                        if (dayMatch) {
+                            const dayOrder = dayMatch[1];
+                            for (let c = 1; c < cells.length && c <= 12; c++) {
+                                const cellContent = cells[c]?.textContent?.trim() || '';
+                                let slotType = cellContent.split('/')[0].trim();
+
+                                const invalidWords = ['FROM', 'TO', 'HOUR', 'TIME', 'DAY', 'ORDER'];
+                                const isValidSlot = slotType &&
+                                    slotType !== '-' &&
+                                    slotType.length <= 4 &&
+                                    !/^\d+$/.test(slotType) &&
+                                    !invalidWords.includes(slotType.toUpperCase()) &&
+                                    /^[A-G]\d*$|^P\d+$|^L\d+$/.test(slotType);
+
+                                if (isValidSlot) {
+                                    slots.push({ dayOrder, period: c.toString(), slotType });
+                                }
+                            }
+                        }
+                    });
+                });
+                return slots;
+            });
+
+            console.log(`[ENT-PUP] Master slots extracted: ${masterSlots.length} for batch ${batchInfo}`);
 
             return {
                 success: true,
@@ -397,11 +443,8 @@ export class EntClient {
                     studentName: 'Student',
                     registrationNumber: username,
                     records,
-                    // Include the detected batch and its master timetable
                     userBatch: batchInfo,
-                    masterTimetable: {
-                        [`batch${batchInfo}`]: masterSlots
-                    }
+                    masterTimetable: { [`batch${batchInfo}`]: masterSlots }
                 }
             };
         });
@@ -509,7 +552,7 @@ export class EntClient {
         }
     }
 
-    private async runPuppeteerAction(username: string, password: string, actionCallback: (page: any, browser: any) => Promise<any>): Promise<any> {
+    private async runPuppeteerAction(username: string, password: string, actionCallback: (page: any, browser: any) => Promise<any>, cookies: any[] = []): Promise<any> {
         let browser = null;
         try {
             console.log('[ENT-PUP] Launching browser...');
@@ -535,9 +578,14 @@ export class EntClient {
             } else {
                 console.log('[ENT-PUP] Using Local config (puppeteer + bundled chrome)');
                 const puppeteer = await import('puppeteer').then(mod => mod.default);
+                const os = await import('os');
+                const path = await import('path');
+                // Use unique temp directory to avoid conflicts with existing browser instances
+                const uniqueDir = path.join(os.tmpdir(), `puppeteer_${Date.now()}_${Math.random().toString(36).slice(2)}`);
                 browser = await puppeteer.launch({
-                    headless: true, // Hidden for production experience
-                    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+                    headless: false, // VISIBLE for debugging - set back to true for production
+                    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+                    userDataDir: uniqueDir
                 });
             }
 
@@ -558,104 +606,187 @@ export class EntClient {
             await page.setViewport({ width: 1280, height: 800 });
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
-            console.log('[ENT-PUP] Navigating to login page...');
-            await page.goto('https://academia.srmist.edu.in/', { waitUntil: 'domcontentloaded', timeout: 45000 });
+            await page.setViewport({ width: 1280, height: 800 });
+            await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
-            console.log('[ENT-PUP] Checking for login selectors...');
-            // Wait for Zoho login elements. Usually an iframe or redirect happens.
-            // If redirected to accounts.zoho.com
-            // We need to handle the Zoho login form.
+            // --- SESSION REUSE LOGIC ---
+            let sessionRestored = false;
+            if (cookies && cookies.length > 0) {
+                console.log('[ENT-PUP] Cookie check...');
+                await page.setCookie(...cookies);
 
-            // Heuristic Not fully known, but assuming standard Input IDs
-            // Often: #login_id or input[type="email"]
-            // Wait for redirect to settle
-            // Wait for redirect to settle
-            try {
-                await page.waitForNavigation({ timeout: 5000, waitUntil: 'domcontentloaded' });
-            } catch (e) { }
+                // Quick check if valid by hitting landing page
+                await page.goto('https://academia.srmist.edu.in/#Welcome_Screen', { waitUntil: 'domcontentloaded', timeout: 15000 });
+                const isLoggedIn = !page.url().includes('login') && !page.url().includes('accounts.zoho');
 
-            console.log(`[ENT-PUP] Current URL after initial nav: ${page.url()}`);
-            let pageTitle = '';
-            try { pageTitle = await page.title(); console.log(`[ENT-PUP] Page Title: ${pageTitle}`); } catch (e) { }
+                if (isLoggedIn) {
+                    console.log('[ENT-PUP] Session restored!');
+                    sessionRestored = true;
+                }
+            }
 
-            // Check if we are on Zoho OR if there is an iframe with Zoho
-            let loginFrame = page.frames().find((f: any) => f.url().includes('zoho.com') || f.url().includes('accounts.zoho'));
-            let isFrame = false;
+            if (!sessionRestored) {
+                console.log('[ENT-PUP] Navigating to login page...');
+                await page.goto('https://academia.srmist.edu.in/', { waitUntil: 'domcontentloaded', timeout: 25000 });
 
-            if (!loginFrame) {
-                // Try finding frame by selector content
-                console.log('[ENT-PUP] Zoho URL not found in frames. Scanning frames for login inputs...');
-                for (const frame of page.frames()) {
-                    try {
-                        const input = await frame.$('input[name="LOGIN_ID"]');
-                        if (input) {
-                            console.log(`[ENT-PUP] Found LOGIN_ID in frame: ${frame.url()}`);
-                            loginFrame = frame;
-                            isFrame = true;
-                            break;
+                console.log('[ENT-PUP] Checking for login selectors...');
+                // Wait for redirect to settle
+                try {
+                    await page.waitForNavigation({ timeout: 5000, waitUntil: 'domcontentloaded' });
+                } catch (e) { }
+
+                console.log(`[ENT-PUP] Current URL after initial nav: ${page.url()}`);
+                let pageTitle = '';
+                try { pageTitle = await page.title(); console.log(`[ENT-PUP] Page Title: ${pageTitle}`); } catch (e) { }
+
+                // Check if we are on Zoho OR if there is an iframe with Zoho
+                let loginFrame = page.frames().find((f: any) => f.url().includes('zoho.com') || f.url().includes('accounts.zoho'));
+                let isFrame = false;
+
+                if (!loginFrame) {
+                    // Try finding frame by selector content
+                    console.log('[ENT-PUP] Zoho URL not found in frames. Scanning frames for login inputs...');
+                    for (const frame of page.frames()) {
+                        try {
+                            const input = await frame.$('input[name="LOGIN_ID"]');
+                            if (input) {
+                                console.log(`[ENT-PUP] Found LOGIN_ID in frame: ${frame.url()}`);
+                                loginFrame = frame;
+                                isFrame = true;
+                                break;
+                            }
+                        } catch (e) { }
+                    }
+                } else {
+                    console.log('[ENT-PUP] Found Zoho login frame by URL');
+                    isFrame = true;
+                }
+
+                if (loginFrame || page.url().includes('zoho.com') || page.url().includes('accounts.zoho')) {
+                    const target = loginFrame || page;
+                    console.log(`[ENT-PUP] interacting with ${isFrame ? 'iframe' : 'main page'}...`);
+
+                    // Allow some time for iframe to render inputs
+                    await new Promise(r => setTimeout(r, 2000));
+
+                    await target.waitForSelector('input[name="LOGIN_ID"]', { timeout: 8000 });
+                    await target.type('input[name="LOGIN_ID"]', username);
+
+                    // Wait for any JS processing after typing
+                    await new Promise(r => setTimeout(r, 500));
+
+                    // Click Next or Password field
+                    console.log('[ENT-PUP] Looking for Next button...');
+                    const nextBtn = await target.$('#nextbtn');
+                    if (nextBtn) {
+                        console.log('[ENT-PUP] Clicking Next button...');
+                        // Try multiple click methods
+                        try {
+                            await Promise.all([
+                                nextBtn.click(),
+                                target.waitForSelector('input[name="PASSWORD"], input[type="password"]', { visible: true, timeout: 10000 })
+                            ]);
+                        } catch {
+                            // If click didn't work, try evaluate click
+                            console.log('[ENT-PUP] Standard click failed, trying evaluate...');
+                            await target.evaluate(() => {
+                                const btn = document.querySelector('#nextbtn') as HTMLElement;
+                                if (btn) btn.click();
+                            });
+                            await new Promise(r => setTimeout(r, 2000));
                         }
-                    } catch (e) { }
+                    } else {
+                        console.log('[ENT-PUP] No Next button found, password might be on same page');
+                    }
+
+                    await target.type('input[name="PASSWORD"]', password);
+
+                    // Submit
+                    console.log('[ENT-PUP] Submitting credentials...');
+                    await page.keyboard.press('Enter');
+
+                    console.log('[ENT-PUP] Waiting for navigation after login...');
+                    await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 });
+
+                    // Handle "Maximum concurrent sessions limit exceeded" page
+                    const pageText = await page.evaluate(() => document.body.innerText);
+                    if (pageText.includes('Maximum concurrent sessions') || pageText.includes('Terminate All Sessions')) {
+                        console.log('[ENT-PUP] Session limit exceeded page detected. Clicking Terminate All Sessions...');
+
+                        // Try to find and click the Terminate button
+                        const clicked = await page.evaluate(() => {
+                            // Look for button with text "Terminate All Sessions"
+                            const buttons = Array.from(document.querySelectorAll('button, input[type="submit"], a'));
+                            for (const btn of buttons) {
+                                const text = (btn as HTMLElement).innerText || (btn as HTMLInputElement).value || '';
+                                if (text.toLowerCase().includes('terminate')) {
+                                    (btn as HTMLElement).click();
+                                    return true;
+                                }
+                            }
+                            return false;
+                        });
+
+                        if (clicked) {
+                            console.log('[ENT-PUP] Terminate button clicked. Waiting for redirect...');
+                            try {
+                                await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 });
+                            } catch (e) {
+                                console.log('[ENT-PUP] Navigation timeout after clicking terminate. Proceeding anyway...');
+                            }
+                        } else {
+                            console.log('[ENT-PUP] Could not find Terminate button');
+                            throw new Error('SESSION_LIMIT_ERROR: Could not auto-terminate sessions. Please logout manually from the official portal.');
+                        }
+                    }
+                } else {
+                    console.log('[ENT-PUP] Login input not found in any frame.');
+                    page.frames().forEach((f: any) => console.log(`[ENT-PUP] Frame: ${f.url()}`));
+                }
+
+                // Post-login check
+                if (page.url().includes('academia.srmist.edu.in')) {
+                    console.log('[ENT-PUP] Login successful (URL match).');
+                } else {
+                    console.log(`[ENT-PUP] Warning: URLs might not match. Current: ${page.url()}`);
                 }
             } else {
-                console.log('[ENT-PUP] Found Zoho login frame by URL');
-                isFrame = true;
+                console.log('[ENT-PUP] Skipping login (Session restored).');
             }
 
-            if (loginFrame || page.url().includes('zoho.com') || page.url().includes('accounts.zoho')) {
-                const target = loginFrame || page;
-                console.log(`[ENT-PUP] interacting with ${isFrame ? 'iframe' : 'main page'}...`);
+            // Capture cookies for session reuse
+            const currentCookies = await page.cookies();
 
-                // Allow some time for iframe to render inputs
-                await new Promise(r => setTimeout(r, 2000));
+            // Run the specific action (Fetch timetable or Attendance)
+            const result = await actionCallback(page, browser);
 
-                await target.waitForSelector('input[name="LOGIN_ID"]', { timeout: 15000 });
-                await target.type('input[name="LOGIN_ID"]', username);
-
-                // Click Next or Password field
-                const nextBtn = await target.$('#nextbtn');
-                if (nextBtn) {
-                    console.log('[ENT-PUP] Clicking Next button...');
-                    await nextBtn.click();
-                    await target.waitForSelector('input[name="PASSWORD"]', { visible: true, timeout: 15000 });
-                }
-
-                await target.type('input[name="PASSWORD"]', password);
-
-                // Submit
-                console.log('[ENT-PUP] Submitting credentials...');
-                await page.keyboard.press('Enter');
-
-                console.log('[ENT-PUP] Waiting for navigation after login...');
-                await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 });
-            } else {
-                console.log('[ENT-PUP] Login input not found in any frame.');
-                // Check for "Sign In" button on main page if we are still on academia
-                if (pageTitle.includes('Login')) {
-                    console.log('[ENT-PUP] We are likely on the landing page. Attempting to click specific Sign In buttons...');
-                    // Heuristic for sign in button?
-                    // Often an anchor or button. We can try to dump page content or just fail gracefully.
-                }
-                page.frames().forEach((f: any) => console.log(`[ENT-PUP] Frame: ${f.url()}`));
+            if (result && result.success) {
+                result.cookies = currentCookies;
             }
 
-
-
-            // Post-login check
-            // Check if we are back on academia
-            if (page.url().includes('academia.srmist.edu.in')) {
-                console.log('[ENT-PUP] Login successful (URL match).');
-            } else {
-                console.log(`[ENT-PUP] Warning: URLs might not match. Current: ${page.url()}`);
-            }
-
-            // Run the specific action (Fetch timtable or Attendance)
-            return await actionCallback(page, browser);
+            return result;
 
         } catch (error: any) {
             console.error('[ENT-PUP] Error:', error.message);
+
+            // User-friendly error messages
+            let userMessage = 'Something went wrong. Please try again.';
+
+            if (error.message.includes('SESSION_LIMIT_ERROR')) {
+                userMessage = error.message.replace('SESSION_LIMIT_ERROR:', '').trim();
+            } else if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+                userMessage = 'Connection timed out. The SRM portal may be slow or unavailable. Please try again in a few minutes.';
+            } else if (error.message.includes('net::ERR_')) {
+                userMessage = 'Network error. Please check your internet connection and try again.';
+            } else if (error.message.includes('LOGIN_ID') || error.message.includes('PASSWORD')) {
+                userMessage = 'Could not find login form. The portal structure may have changed. Please try again later.';
+            } else if (error.message.includes('navigation')) {
+                userMessage = 'Navigation failed. The SRM portal may be experiencing issues. Please try again.';
+            }
+
             return {
                 success: false,
-                error: `Browser automation failed: ${error.message}. Please try again.`
+                error: userMessage
             };
         } finally {
             if (browser) await browser.close();

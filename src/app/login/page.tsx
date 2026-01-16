@@ -105,6 +105,11 @@ function LoginForm() {
                 };
                 localStorage.setItem('profileData', JSON.stringify(profileData));
 
+                // Store Cookies for ENT Session Reuse (Phase 2)
+                if (dept === 'ENT' && data.cookies) {
+                    localStorage.setItem('entCookies', JSON.stringify(data.cookies));
+                }
+
                 if (dept === 'FSH' && cookies) {
                     localStorage.setItem('fshCookies', cookies);
                     localStorage.setItem('csrf', csrf || '');

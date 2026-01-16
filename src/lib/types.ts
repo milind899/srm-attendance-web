@@ -62,7 +62,7 @@ export interface ScraperResult {
     error?: string;
     captchaNeeded?: boolean;
     captchaImage?: string;
-    cookies?: string;
+    cookies?: any[]; // Allow any structure for cookies (ENT) or string (FSH)
     csrfToken?: string;
 }
 
@@ -114,4 +114,5 @@ export interface TimetableResult {
     success: boolean;
     data?: TimetableData;
     error?: string;
+    cookies?: any[]; // Added for session reuse
 }

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Menu, X, ArrowRight, ChevronRight, User, Lock, AlertCircle } from 'lucide-react';
 import { InteractiveGraph } from '@/components/InteractiveGraph';
 import { DecryptText } from '@/components/DecryptText';
@@ -12,6 +13,7 @@ import { InstallPWA } from '@/components/InstallPWA';
 import Image from 'next/image';
 
 export default function Home() {
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showLoginMenu, setShowLoginMenu] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -20,7 +22,12 @@ export default function Home() {
     // Check if user has attendance data (is logged in)
     const hasData = localStorage.getItem('attendanceData');
     setIsLoggedIn(!!hasData);
-  }, []);
+
+    // Auto-redirect to dashboard if logged in
+    if (hasData) {
+      router.replace('/dashboard');
+    }
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-background text-textMain selection:bg-primary/30 selection:text-white animate-scale-in origin-center">

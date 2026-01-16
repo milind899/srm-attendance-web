@@ -214,6 +214,66 @@ export default function Dashboard() {
         }
     };
 
+    // PHASE 2: Background Fetch for Master Timetable (ENT)
+    useEffect(() => {
+        const checkAndFetchTimetable = async () => {
+            const dept = localStorage.getItem('department');
+            if (dept !== 'ENT') return;
+
+            const userBatch = localStorage.getItem('userBatch');
+            const entCookies = localStorage.getItem('entCookies');
+            const username = localStorage.getItem('username');
+            const password = localStorage.getItem('password') || 'unused'; // Password needed for fallback if session fails
+
+            if (!userBatch || !entCookies || !username) return;
+
+            // Check if we already have the master timetable for this batch
+            const existingTimetable = localStorage.getItem(`timetable_batch_${userBatch}`);
+            if (existingTimetable) {
+                console.log('Master timetable already exists for batch', userBatch);
+                return;
+            }
+
+            console.log('Fetching master timetable in background...');
+            // Trigger toast? Maybe too intrusive.
+
+            try {
+                const res = await fetch('/api/attendance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        department: 'ENT',
+                        username,
+                        password,
+                        action: 'timetable',
+                        batch: userBatch,
+                        cookies: entCookies
+                    })
+                });
+
+                const result = await res.json();
+                if (result.success && result.data?.masterSlots) {
+                    console.log('Background fetch successful!');
+                    const masterSlots = result.data.masterSlots;
+                    if (masterSlots.length > 0) {
+                        localStorage.setItem(`timetable_batch_${userBatch}`, JSON.stringify({ masterSlots }));
+                        // Optional: trigger a UI update or toast
+                        // showToastNotification('Timetable updated!', 'success');
+                    }
+                } else {
+                    console.error('Background fetch failed:', result.error);
+                }
+
+            } catch (e) {
+                console.error('Background fetch error:', e);
+            }
+        };
+
+        // Small delay to let main UI render first
+        const t = setTimeout(checkAndFetchTimetable, 2000);
+        return () => clearTimeout(t);
+    }, []);
+
     const handleRefresh = async () => {
         const dept = localStorage.getItem('department') || 'ENT';
         const username = localStorage.getItem('username');
